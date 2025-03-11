@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { motion } from 'framer-motion';
 import { fetchMentors } from '../redux/slices/mentorsSlice';
@@ -41,7 +41,14 @@ const Mentors = () => {
 
   const handleBookSession = (mentor) => {
     if (mentor.topmate) {
-      window.open(mentor.topmate, '_blank');
+      // Use a more secure way to open external links
+      const link = document.createElement('a');
+      link.href = mentor.topmate;
+      link.target = '_blank';
+      link.rel = 'noopener noreferrer';
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
     } else {
       toast.error('Mentor has not set up their booking link yet');
     }

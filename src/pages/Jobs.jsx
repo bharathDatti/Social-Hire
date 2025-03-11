@@ -1,12 +1,12 @@
-import { useEffect, useState, useRef, useCallback } from 'react';
+import { useEffect, useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { fetchJobs } from '../redux/slices/jobsSlice';
+import { fetchJobs, deleteJob } from '../redux/slices/jobsSlice';
 import { FiBriefcase, FiMapPin, FiDollarSign, FiClock, FiSearch, FiFilter, FiShare2, FiCalendar } from 'react-icons/fi';
 import { toast } from 'react-toastify';
 
-const JOBS_PER_PAGE = 10;
+const JOBS_PER_PAGE = 5;
 
 const Jobs = () => {
   const dispatch = useDispatch();
@@ -22,136 +22,89 @@ const Jobs = () => {
   const [showFilters, setShowFilters] = useState(false);
   const [sharedJobId, setSharedJobId] = useState(null);
   const [selectedJob, setSelectedJob] = useState(null);
-  const [displayedJobs, setDisplayedJobs] = useState([]);
-  const [hasMore, setHasMore] = useState(true);
-  const [page, setPage] = useState(1);
-  const observer = useRef();
+  const [currentPage, setCurrentPage] = useState(1);
 
-  // Function to calculate time remaining
   const calculateTimeRemaining = (expiryDate) => {
     if (!expiryDate) return null;
-    
     const now = new Date().getTime();
     const expiry = new Date(expiryDate).getTime();
     const timeLeft = expiry - now;
-    
     if (timeLeft <= 0) return 'Expired';
-    
     const days = Math.floor(timeLeft / (1000 * 60 * 60 * 24));
     const hours = Math.floor((timeLeft % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
-    
-    if (days > 0) return `${days} day${days > 1 ? 's' : ''} left`;
-    return `${hours} hour${hours > 1 ? 's' : ''} left`;
+    return days > 0 ? `${days} day${days > 1 ? 's' : ''} left` : `${hours} hour${hours > 1 ? 's' : ''} left`;
   };
 
-  // Function to check if job is about to expire (less than 24 hours)
   const isAboutToExpire = (expiryDate) => {
     if (!expiryDate) return false;
-    
     const now = new Date().getTime();
     const expiry = new Date(expiryDate).getTime();
     const timeLeft = expiry - now;
-    
     return timeLeft > 0 && timeLeft <= 24 * 60 * 60 * 1000;
   };
 
-  // Filter out expired jobs
-  const activeJobs = jobs.filter(job => {
-    if (!job.expiryDate) return true;
-    return new Date(job.expiryDate).getTime() > new Date().getTime();
-  });
+  useEffect(() => {
+    const checkExpiredJobs = () => {
+      jobs.forEach(job => {
+        if (job.expiryDate && new Date(job.expiryDate).getTime() <= new Date().getTime()) {
+          dispatch(deleteJob(job.id));
+        }
+      });
+    };
+    checkExpiredJobs();
+    const interval = setInterval(checkExpiredJobs, 60000);
+    return () => clearInterval(interval);
+  }, [jobs, dispatch]);
 
   useEffect(() => {
     dispatch(fetchJobs());
   }, [dispatch]);
 
   useEffect(() => {
-    // Check for shared job ID in URL params
     const params = new URLSearchParams(location.search);
     const jobId = params.get('jobId');
     if (jobId) {
       setSharedJobId(jobId);
       const job = jobs.find(j => j.id === jobId);
-      if (job) {
-        setSelectedJob(job);
-      }
+      if (job) setSelectedJob(job);
       if (!isAuthenticated) {
         navigate('/login', { state: { from: location.pathname + location.search } });
       }
     }
   }, [location, isAuthenticated, navigate, jobs]);
 
-  // Filter jobs based on search and filters
   const filteredJobs = jobs.filter(job => {
     const matchesSearch = job.title.toLowerCase().includes(searchTerm.toLowerCase()) || 
                          job.company.toLowerCase().includes(searchTerm.toLowerCase()) ||
                          job.description.toLowerCase().includes(searchTerm.toLowerCase());
-    
     const matchesType = filters.type === '' || job.type === filters.type;
     const matchesLocation = filters.location === '' || job.location.includes(filters.location);
-    
     return matchesSearch && matchesType && matchesLocation;
   });
 
-  // Reset pagination when filters change
-  useEffect(() => {
-    setPage(1);
-    setDisplayedJobs([]);
-    setHasMore(true);
-  }, [searchTerm, filters]);
-
-  // Load more jobs when page changes
-  useEffect(() => {
-    const startIndex = (page - 1) * JOBS_PER_PAGE;
-    const endIndex = startIndex + JOBS_PER_PAGE;
-    const newJobs = filteredJobs.slice(startIndex, endIndex);
-    
-    if (page === 1) {
-      setDisplayedJobs(newJobs);
-    } else {
-      setDisplayedJobs(prev => [...prev, ...newJobs]);
-    }
-    
-    setHasMore(endIndex < filteredJobs.length);
-  }, [page, filteredJobs]);
-
-  // Intersection Observer setup
-  const lastJobElementRef = useCallback(node => {
-    if (loading) return;
-    if (observer.current) observer.current.disconnect();
-    
-    observer.current = new IntersectionObserver(entries => {
-      if (entries[0].isIntersecting && hasMore) {
-        setPage(prevPage => prevPage + 1);
-      }
-    });
-    
-    if (node) observer.current.observe(node);
-  }, [loading, hasMore]);
+  const totalPages = Math.ceil(filteredJobs.length / JOBS_PER_PAGE);
+  const startIndex = (currentPage - 1) * JOBS_PER_PAGE;
+  const endIndex = startIndex + JOBS_PER_PAGE;
+  const displayedJobs = filteredJobs.slice(startIndex, endIndex);
 
   const handleSearchChange = (e) => {
     setSearchTerm(e.target.value);
+    setCurrentPage(1);
   };
 
   const handleFilterChange = (e) => {
-    const { name, value } = e.target;
-    setFilters(prev => ({
-      ...prev,
-      [name]: value
-    }));
+    setFilters(prev => ({ ...prev, [e.target.name]: e.target.value }));
+    setCurrentPage(1);
   };
 
   const resetFilters = () => {
-    setFilters({
-      type: '',
-      location: '',
-    });
+    setFilters({ type: '', location: '' });
     setSearchTerm('');
+    setCurrentPage(1);
   };
 
   const handleShare = async (jobId) => {
     const shareUrl = `${window.location.origin}/jobs?jobId=${jobId}`;
-    
     try {
       if (navigator.share) {
         await navigator.share({
@@ -174,29 +127,16 @@ const Jobs = () => {
     }
   };
 
-  // Get unique locations for filter
   const locations = [...new Set(jobs.map(job => job.location))];
-  
-  // Animation variants
+
   const containerVariants = {
     hidden: { opacity: 0 },
-    visible: {
-      opacity: 1,
-      transition: {
-        staggerChildren: 0.1
-      }
-    }
+    visible: { opacity: 1, transition: { staggerChildren: 0.1 } }
   };
-  
+
   const itemVariants = {
     hidden: { y: 20, opacity: 0 },
-    visible: {
-      y: 0,
-      opacity: 1,
-      transition: {
-        duration: 0.3
-      }
-    }
+    visible: { y: 0, opacity: 1, transition: { duration: 0.3 } }
   };
 
   return (
@@ -211,7 +151,7 @@ const Jobs = () => {
           <h1 className="text-3xl font-bold text-gray-100">Job Listings</h1>
           <p className="mt-2 text-lg text-gray-300">Find and apply for curated job opportunities</p>
         </motion.div>
-        
+
         <div className="mb-8">
           <div className="flex flex-col md:flex-row gap-4 items-center">
             <div className="relative w-full md:w-2/3">
@@ -226,7 +166,6 @@ const Jobs = () => {
                 className="input-field pl-10 py-3"
               />
             </div>
-            
             <button 
               onClick={() => setShowFilters(!showFilters)}
               className="flex items-center justify-center px-4 py-3 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 w-full md:w-auto"
@@ -234,7 +173,7 @@ const Jobs = () => {
               <FiFilter className="mr-2" /> {showFilters ? 'Hide Filters' : 'Show Filters'}
             </button>
           </div>
-          
+
           {showFilters && (
             <motion.div 
               initial={{ height: 0, opacity: 0 }}
@@ -245,16 +184,8 @@ const Jobs = () => {
             >
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 <div>
-                  <label htmlFor="type" className="block text-sm font-medium text-gray-700 mb-1">
-                    Job Type
-                  </label>
-                  <select
-                    id="type"
-                    name="type"
-                    value={filters.type}
-                    onChange={handleFilterChange}
-                    className="input-field"
-                  >
+                  <label htmlFor="type" className="block text-sm font-medium text-gray-700 mb-1">Job Type</label>
+                  <select id="type" name="type" value={filters.type} onChange={handleFilterChange} className="input-field">
                     <option value="">All Types</option>
                     <option value="Full-time">Full-time</option>
                     <option value="Part-time">Part-time</option>
@@ -262,30 +193,17 @@ const Jobs = () => {
                     <option value="Internship">Internship</option>
                   </select>
                 </div>
-                
                 <div>
-                  <label htmlFor="location" className="block text-sm font-medium text-gray-700 mb-1">
-                    Location
-                  </label>
-                  <select
-                    id="location"
-                    name="location"
-                    value={filters.location}
-                    onChange={handleFilterChange}
-                    className="input-field"
-                  >
+                  <label htmlFor="location" className="block text-sm font-medium text-gray-700 mb-1">Location</label>
+                  <select id="location" name="location" value={filters.location} onChange={handleFilterChange} className="input-field">
                     <option value="">All Locations</option>
                     {locations.map((location, index) => (
                       <option key={index} value={location}>{location}</option>
                     ))}
                   </select>
                 </div>
-                
                 <div className="flex items-end">
-                  <button
-                    onClick={resetFilters}
-                    className="text-primary-600 hover:text-primary-800 font-medium"
-                  >
+                  <button onClick={resetFilters} className="text-primary-600 hover:text-primary-800 font-medium">
                     Reset Filters
                   </button>
                 </div>
@@ -293,7 +211,7 @@ const Jobs = () => {
             </motion.div>
           )}
         </div>
-        
+
         {loading && displayedJobs.length === 0 ? (
           <div className="flex justify-center items-center py-12">
             <svg className="animate-spin h-10 w-10 text-primary-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
@@ -307,82 +225,94 @@ const Jobs = () => {
             <h3 className="mt-2 text-lg font-medium text-gray-900">No jobs found</h3>
             <p className="mt-1 text-sm text-gray-500">Try adjusting your search or filter criteria.</p>
             <div className="mt-6">
-              <button
-                onClick={resetFilters}
-                className="text-primary-600 hover:text-primary-800 font-medium"
-              >
+              <button onClick={resetFilters} className="text-primary-600 hover:text-primary-800 font-medium">
                 Reset all filters
               </button>
             </div>
           </div>
         ) : (
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            {/* Job Listings */}
-            <motion.div 
-              className="space-y-4"
-              variants={containerVariants}
-              initial="hidden"
-              animate="visible"
-            >
-              {displayedJobs.map((job, index) => (
-                <motion.div 
-                  key={job.id}
-                  ref={index === displayedJobs.length - 1 ? lastJobElementRef : null}
-                  className={`bg-white rounded-lg shadow-md overflow-hidden hover:shadow-lg transition-shadow duration-300 cursor-pointer ${
-                    selectedJob?.id === job.id ? 'ring-2 ring-primary-500' : ''
-                  }`}
-                  variants={itemVariants}
-                  onClick={() => setSelectedJob(job)}
-                >
-                  <div className="p-4">
-                    <div className="flex justify-between items-start">
-                      <div>
-                        <h3 className="text-lg font-semibold text-gray-900">{job.title}</h3>
-                        <p className="text-primary-600 font-medium">{job.company}</p>
-                      </div>
-                      <div className="flex flex-col items-end gap-2">
-                        <div className="bg-primary-100 text-primary-800 text-xs font-semibold px-2.5 py-0.5 rounded">
-                          {job.type}
+            <div className="space-y-6"> {/* Increased from space-y-4 to space-y-6 */}
+              <motion.div variants={containerVariants} initial="hidden" animate="visible">
+                {displayedJobs.map(job => (
+                  <motion.div 
+                    key={job.id}
+                    className={`bg-white rounded-lg shadow-md overflow-hidden hover:shadow-lg transition-shadow duration-300 cursor-pointer mb-4 ${ /* Added mb-4 for additional bottom margin */
+                      selectedJob?.id === job.id ? 'ring-2 ring-primary-500' : ''
+                    }`}
+                    variants={itemVariants}
+                    onClick={() => setSelectedJob(job)}
+                  >
+                    <div className="p-4">
+                      <div className="flex justify-between items-start">
+                        <div>
+                          <h3 className="text-lg font-semibold text-gray-900">{job.title}</h3>
+                          <p className="text-primary-600 font-medium">{job.company}</p>
                         </div>
-                        {job.expiryDate && (
-                          <div className={`text-xs font-medium px-2.5 py-0.5 rounded ${
-                            isAboutToExpire(job.expiryDate) 
-                              ? 'bg-red-100 text-red-800 animate-pulse'
-                              : 'bg-gray-100 text-gray-800'
-                          }`}>
-                            <FiCalendar className="inline-block mr-1" />
-                            {calculateTimeRemaining(job.expiryDate)}
+                        <div className="flex flex-col items-end gap-2">
+                          <div className="bg-primary-100 text-primary-800 text-xs font-semibold px-2.5 py-0.5 rounded">
+                            {job.type}
                           </div>
-                        )}
+                          {job.expiryDate && (
+                            <div className={`text-xs font-medium px-2.5 py-0.5 rounded ${
+                              isAboutToExpire(job.expiryDate) 
+                                ? 'bg-red-100 text-red-800 animate-pulse'
+                                : 'bg-gray-100 text-gray-800'
+                            }`}>
+                              <FiCalendar className="inline-block mr-1" />
+                              {calculateTimeRemaining(job.expiryDate)}
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                      <div className="mt-4 space-y-2">
+                        <div className="flex items-center text-sm text-gray-500">
+                          <FiMapPin className="mr-2 h-4 w-4" />
+                          {job.location}
+                        </div>
+                        <div className="flex items-center text-sm text-gray-500">
+                          <FiDollarSign className="mr-2 h-4 w-4" />
+                          {job.salary}
+                        </div>
                       </div>
                     </div>
-                    
-                    <div className="mt-4 space-y-2">
-                      <div className="flex items-center text-sm text-gray-500">
-                        <FiMapPin className="mr-2 h-4 w-4" />
-                        {job.location}
-                      </div>
-                      
-                      <div className="flex items-center text-sm text-gray-500">
-                        <FiDollarSign className="mr-2 h-4 w-4" />
-                        {job.salary}
-                      </div>
-                    </div>
-                  </div>
-                </motion.div>
-              ))}
-              
-              {loading && displayedJobs.length > 0 && (
-                <div className="flex justify-center py-4">
-                  <svg className="animate-spin h-6 w-6 text-primary-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                  </svg>
+                  </motion.div>
+                ))}
+              </motion.div>
+
+              {totalPages > 1 && (
+                <div className="flex justify-center gap-2 mt-6">
+                  <button
+                    onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
+                    disabled={currentPage === 1}
+                    className="px-4 py-2 bg-white rounded-md shadow hover:bg-gray-50 disabled:opacity-50"
+                  >
+                    Previous
+                  </button>
+                  {Array.from({ length: totalPages }, (_, i) => i + 1).map(page => (
+                    <button
+                      key={page}
+                      onClick={() => setCurrentPage(page)}
+                      className={`px-4 py-2 rounded-md shadow ${
+                        currentPage === page 
+                          ? 'bg-primary-600 text-white' 
+                          : 'bg-white hover:bg-gray-50'
+                      }`}
+                    >
+                      {page}
+                    </button>
+                  ))}
+                  <button
+                    onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
+                    disabled={currentPage === totalPages}
+                    className="px-4 py-2 bg-white rounded-md shadow hover:bg-gray-50 disabled:opacity-50"
+                  >
+                    Next
+                  </button>
                 </div>
               )}
-            </motion.div>
+            </div>
 
-            {/* Job Details */}
             <div className="lg:sticky lg:top-4 h-fit">
               {selectedJob ? (
                 <motion.div 
@@ -405,35 +335,29 @@ const Jobs = () => {
                         <FiShare2 className="h-5 w-5" />
                       </button>
                     </div>
-
                     <div className="grid grid-cols-2 gap-4 mb-6">
                       <div className="flex items-center text-gray-600">
                         <FiMapPin className="mr-2 h-5 w-5" />
                         {selectedJob.location}
                       </div>
-                      
                       <div className="flex items-center text-gray-600">
                         <FiDollarSign className="mr-2 h-5 w-5" />
                         {selectedJob.salary}
                       </div>
-                      
                       <div className="flex items-center text-gray-600">
                         <FiBriefcase className="mr-2 h-5 w-5" />
                         {selectedJob.type}
                       </div>
-                      
                       <div className="flex items-center text-gray-600">
                         <FiClock className="mr-2 h-5 w-5" />
                         Posted {new Date(selectedJob.createdAt).toLocaleDateString()}
                       </div>
                     </div>
-
                     <div className="space-y-6">
                       <div>
                         <h3 className="text-lg font-semibold text-gray-900 mb-2">Description</h3>
                         <p className="text-gray-600 whitespace-pre-line">{selectedJob.description}</p>
                       </div>
-
                       {selectedJob.requirements && (
                         <div>
                           <h3 className="text-lg font-semibold text-gray-900 mb-2">Requirements</h3>
@@ -441,7 +365,6 @@ const Jobs = () => {
                         </div>
                       )}
                     </div>
-
                     <div className="mt-8">
                       {selectedJob.applicationUrl ? (
                         <a
@@ -453,9 +376,7 @@ const Jobs = () => {
                           Apply Now
                         </a>
                       ) : (
-                        <button className="btn-primary w-full">
-                          Apply Now
-                        </button>
+                        <button className="btn-primary w-full">Apply Now</button>
                       )}
                     </div>
                   </div>
