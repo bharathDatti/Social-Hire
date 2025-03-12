@@ -16,8 +16,7 @@
 /* Apply background to html instead of body for better coverage */
 html {
   min-height: 100vh;
-  background-image: linear-gradient(rgba(255, 255, 255, 0.9), rgba(255, 255, 255, 0.9)),
-    url('/bgimg.jpg');  /* Image path now references the public folder */
+  background-image: url('/bgimg.jpg');  /* Image path now references the public folder */
   background-size: cover;
   background-position: center;
   background-attachment: fixed;

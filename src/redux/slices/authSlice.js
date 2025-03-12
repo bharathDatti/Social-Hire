@@ -105,11 +105,21 @@ export const googleLogin = createAsyncThunk(
       await setPersistence(auth, browserLocalPersistence);
       
       const provider = new GoogleAuthProvider();
-      const userCredential = await signInWithPopup(auth, provider);
+      provider.setCustomParameters({
+        prompt: 'select_account'
+      });
       
+      // Configure auth settings for popup
+      auth.settings.appVerificationDisabledForTesting = true;
+      
+      const userCredential = await signInWithPopup(auth, provider);
       const userData = await createUserDocument(userCredential.user);
       return userData;
     } catch (error) {
+      // Handle popup closed errors gracefully
+      if (error.code === 'auth/popup-closed-by-user') {
+        return rejectWithValue('Sign in cancelled');
+      }
       return rejectWithValue(error.message);
     }
   }

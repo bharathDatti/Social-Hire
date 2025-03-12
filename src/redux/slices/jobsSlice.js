@@ -88,19 +88,46 @@ const jobsSlice = createSlice({
         state.error = action.payload;
       })
       // Add Job
+      .addCase(addJob.pending, (state) => {
+        state.loading = true;
+        state.error = null;
+      })
       .addCase(addJob.fulfilled, (state, action) => {
+        state.loading = false;
         state.jobs.push(action.payload);
       })
+      .addCase(addJob.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.payload;
+      })
       // Update Job
+      .addCase(updateJob.pending, (state) => {
+        state.loading = true;
+        state.error = null;
+      })
       .addCase(updateJob.fulfilled, (state, action) => {
+        state.loading = false;
         const index = state.jobs.findIndex(job => job.id === action.payload.id);
         if (index !== -1) {
           state.jobs[index] = action.payload;
         }
       })
+      .addCase(updateJob.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.payload;
+      })
       // Delete Job
+      .addCase(deleteJob.pending, (state) => {
+        state.loading = true;
+        state.error = null;
+      })
       .addCase(deleteJob.fulfilled, (state, action) => {
+        state.loading = false;
         state.jobs = state.jobs.filter(job => job.id !== action.payload);
+      })
+      .addCase(deleteJob.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.payload;
       });
   },
 });

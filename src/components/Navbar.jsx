@@ -8,7 +8,7 @@ import { FiMenu, FiX, FiUser, FiBriefcase, FiCalendar, FiBook, FiLogOut, FiFileT
 
 const Navbar = () => {
   const [isOpen, setIsOpen] = useState(false);
-  const { user, isAuthenticated } = useSelector(state => state.auth);
+  const { user, isAuthenticated } = useSelector((state) => state.auth);
   const dispatch = useDispatch();
   const navigate = useNavigate();
   const location = useLocation();
@@ -20,16 +20,17 @@ const Navbar = () => {
 
   const navItems = [
     { path: '/profile', label: 'Digi Profile', icon: FiUser },
-    { path: '/jobs', label: 'Curated jobs', icon: FiBriefcase },
+    { path: '/jobs', label: 'Curated Jobs', icon: FiBriefcase },
     { path: '/mentors', label: 'Book Mentors', icon: FiUser },
     { path: '/webinars', label: 'Events', icon: FiCalendar },
     { path: '/placement', label: 'Placement Prep', icon: FiBook },
     { path: '/resume-builder', label: 'AI Resume', icon: FiFileText },
     { path: '/codelabs', label: 'Code Labs', icon: FiCode },
-    { path: '/admin', label: 'Admin', icon: FiUser, requireAdmin: true }
+    { path: '/admin', label: 'Admin', icon: FiUser, requireAdmin: true },
   ];
 
   const handleNavClick = (path) => {
+    setIsOpen(false);
     if (!isAuthenticated) {
       navigate('/login', { state: { from: path } });
     } else {
@@ -38,46 +39,46 @@ const Navbar = () => {
   };
 
   return (
-    <nav className="bg-black shadow-md">
+    <nav className="bg-black shadow-md sticky top-0 z-50">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="flex justify-between h-16">
-          <div className="flex">
-            <Link to="/" className="flex-shrink-0 flex items-center">
-              <span className="text-primary-100 font-bold text-xl">Social Hire</span>
+        <div className="flex justify-between items-center h-16">
+          {/* Logo */}
+          <div className="flex-shrink-0">
+            <Link to="/" className="flex items-center">
+              <span className="text-primary-100 font-bold text-xl sm:text-2xl">Social Hire</span>
             </Link>
           </div>
-          
-          {/* Desktop menu */}
-          <div className="hidden md:flex items-center space-x-4">
-            {navItems.map((item) => (
+
+          {/* Desktop Menu */}
+          <div className="hidden md:flex items-center md:space-x-1 lg:space-x-4 md:overflow-x-auto">
+            {navItems.map((item) =>
               (!item.requireAdmin || (isAuthenticated && user?.role === 'admin')) && (
                 <button
                   key={item.path}
                   onClick={() => handleNavClick(item.path)}
-                  className={`text-gray-100 hover:text-blue-400 px-3 py-2 rounded-md text-sm font-medium flex items-center ${
+                  className={`flex items-center px-2 py-1 md:text-xs lg:text-base md:whitespace-nowrap lg:px-3 lg:py-2 font-medium text-gray-100 hover:text-blue-400 rounded-md ${
                     location.pathname === item.path ? 'text-orange-400' : ''
                   }`}
                 >
-                  <item.icon className="mr-2 h-4 w-4" />
+                  <item.icon className="mr-1 md:h-3 md:w-3 lg:h-4 lg:w-4" />
                   {item.label}
                 </button>
               )
-            ))}
+            )}
 
             {isAuthenticated ? (
-              <Menu as="div" className="relative ml-3">
-                <Menu.Button className="flex items-center text-gray-100 hover:text-primary-600">
-                  <div className="h-8 w-8 rounded-full bg-primary-100 flex items-center justify-center">
+              <Menu as="div" className="relative ml-2 lg:ml-4">
+                <Menu.Button className="flex items-center text-gray-100 hover:text-blue-400">
+                  <div className="h-8 w-8 lg:h-10 lg:w-10 rounded-full bg-primary-100 flex items-center justify-center">
                     {user?.profileImage ? (
-                      <img src={user.profileImage} alt={user.displayName} className="h-8 w-8 rounded-full" />
+                      <img src={user.profileImage} alt={user.displayName} className="h-full w-full rounded-full object-cover" />
                     ) : (
-                      <span className="text-primary-600 font-medium">
+                      <span className="text-primary-600 font-medium text-base lg:text-lg">
                         {user?.displayName?.charAt(0) || 'U'}
                       </span>
                     )}
                   </div>
                 </Menu.Button>
-
                 <Transition
                   enter="transition ease-out duration-100"
                   enterFrom="transform opacity-0 scale-95"
@@ -86,14 +87,12 @@ const Navbar = () => {
                   leaveFrom="transform opacity-100 scale-100"
                   leaveTo="transform opacity-0 scale-95"
                 >
-                  <Menu.Items className="absolute right-0 mt-2 w-48 origin-top-right bg-white rounded-md shadow-lg py-1">
+                  <Menu.Items className="absolute right-0 mt-2 w-48 bg-white rounded-md shadow-lg py-1 z-50">
                     <Menu.Item>
                       {({ active }) => (
                         <Link
                           to="/profile"
-                          className={`${
-                            active ? 'bg-gray-100' : ''
-                          } block px-4 py-2 text-sm text-gray-900`}
+                          className={`${active ? 'bg-gray-100' : ''} block px-4 py-2 text-sm text-gray-900`}
                         >
                           Your Profile
                         </Link>
@@ -103,9 +102,7 @@ const Navbar = () => {
                       {({ active }) => (
                         <button
                           onClick={handleLogout}
-                          className={`${
-                            active ? 'bg-gray-100' : ''
-                          } block w-full text-left px-4 py-2 text-sm text-gray-900`}
+                          className={`${active ? 'bg-gray-100' : ''} block w-full text-left px-4 py-2 text-sm text-gray-900`}
                         >
                           Sign out
                         </button>
@@ -115,80 +112,82 @@ const Navbar = () => {
                 </Transition>
               </Menu>
             ) : (
-              <>
-                <Link to="/login" className="text-gray-100 hover:text-primary-600 px-3 py-2 rounded-md text-sm font-medium">
+              <div className="flex md:space-x-1 lg:space-x-4">
+                <Link
+                  to="/login"
+                  className="text-gray-100 hover:text-blue-400 px-2 py-1 md:text-xs lg:text-base lg:px-3 lg:py-2 font-medium rounded-md"
+                >
                   Login
                 </Link>
-                <Link to="/register" className="bg-primary-600 hover:bg-primary-700 text-white px-3 py-2 rounded-md text-sm font-medium">
+                <Link
+                  to="/register"
+                  className="bg-primary-600 hover:bg-primary-700 text-white px-2 py-1 md:text-xs lg:text-base lg:px-3 lg:py-2 font-medium rounded-md"
+                >
                   Register
                 </Link>
-              </>
+              </div>
             )}
           </div>
-          
-          {/* Mobile menu button */}
+
+          {/* Mobile Menu Button */}
           <div className="md:hidden flex items-center">
             <button
               onClick={() => setIsOpen(!isOpen)}
-              className="inline-flex items-center justify-center p-2 rounded-md text-gray-100 hover:text-primary-600 focus:outline-none"
+              className="p-2 rounded-md text-gray-100 hover:text-blue-400 focus:outline-none"
+              aria-label="Toggle menu"
             >
               {isOpen ? <FiX className="h-6 w-6" /> : <FiMenu className="h-6 w-6" />}
             </button>
           </div>
         </div>
       </div>
-      
-      {/* Mobile menu */}
-      <motion.div 
+
+      {/* Mobile Menu */}
+      <motion.div
         className={`md:hidden ${isOpen ? 'block' : 'hidden'}`}
         initial="closed"
-        animate={isOpen ? "open" : "closed"}
+        animate={isOpen ? 'open' : 'closed'}
         variants={{
           open: { opacity: 1, height: 'auto' },
-          closed: { opacity: 0, height: 0 }
+          closed: { opacity: 0, height: 0 },
         }}
         transition={{ duration: 0.3 }}
       >
-        <div className="px-2 pt-2 pb-3 space-y-1 sm:px-3">
-          {navItems.map((item) => (
+        <div className="px-2 pt-2 pb-3 space-y-1">
+          {navItems.map((item) =>
             (!item.requireAdmin || (isAuthenticated && user?.role === 'admin')) && (
               <button
                 key={item.path}
-                onClick={() => {
-                  handleNavClick(item.path);
-                  setIsOpen(false);
-                }}
-                className={`flex items-center w-full text-left text-gray-100 hover:bg-primary-50 hover:text-primary-600 px-3 py-2 rounded-md text-base font-medium ${
-                  location.pathname === item.path ? 'text-primary-600 bg-primary-50' : ''
+                onClick={() => handleNavClick(item.path)}
+                className={`w-full text-left flex items-center px-3 py-2 text-base font-medium text-gray-100 hover:bg-primary-50 hover:text-blue-400 rounded-md ${
+                  location.pathname === item.path ? 'text-orange-400 bg-primary-50' : ''
                 }`}
               >
-                <item.icon className="mr-2" /> {item.label}
+                <item.icon className="mr-2 h-5 w-5" />
+                {item.label}
               </button>
             )
-          ))}
-
+          )}
           {isAuthenticated ? (
-            <button 
-              onClick={() => {
-                handleLogout();
-                setIsOpen(false);
-              }}
-              className="flex items-center w-full text-left text-gray-100 hover:bg-primary-50 hover:text-primary-600 block px-3 py-2 rounded-md text-base font-medium"
+            <button
+              onClick={handleLogout}
+              className="w-full text-left flex items-center px-3 py-2 text-base font-medium text-gray-100 hover:bg-primary-50 hover:text-blue-400 rounded-md"
             >
-              <FiLogOut className="mr-2" /> Logout
+              <FiLogOut className="mr-2 h-5 w-5" />
+              Logout
             </button>
           ) : (
             <>
-              <Link 
-                to="/login" 
-                className="text-gray-100 hover:bg-primary-50 hover:text-primary-600 block px-3 py-2 rounded-md text-base font-medium"
+              <Link
+                to="/login"
+                className="block px-3 py-2 text-base font-medium text-gray-100 hover:bg-primary-50 hover:text-blue-400 rounded-md"
                 onClick={() => setIsOpen(false)}
               >
                 Login
               </Link>
-              <Link 
-                to="/register" 
-                className="bg-primary-600 hover:bg-primary-700 text-white block px-3 py-2 rounded-md text-base font-medium"
+              <Link
+                to="/register"
+                className="block px-3 py-2 text-base font-medium bg-primary-600 hover:bg-primary-700 text-white rounded-md"
                 onClick={() => setIsOpen(false)}
               >
                 Register
