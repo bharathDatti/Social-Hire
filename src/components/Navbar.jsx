@@ -30,7 +30,7 @@ const Navbar = () => {
   ];
 
   const handleNavClick = (path) => {
-    setIsOpen(false); // Close mobile menu on click
+    setIsOpen(false);
     if (!isAuthenticated) {
       navigate('/login', { state: { from: path } });
     } else {
@@ -50,17 +50,17 @@ const Navbar = () => {
           </div>
 
           {/* Desktop Menu */}
-          <div className="hidden md:flex items-center space-x-2 lg:space-x-4">
+          <div className="hidden md:flex items-center md:space-x-1 lg:space-x-4 md:overflow-x-auto">
             {navItems.map((item) =>
               (!item.requireAdmin || (isAuthenticated && user?.role === 'admin')) && (
                 <button
                   key={item.path}
                   onClick={() => handleNavClick(item.path)}
-                  className={`flex items-center px-2 py-1 lg:px-3 lg:py-2 text-sm lg:text-base font-medium text-gray-100 hover:text-blue-400 rounded-md ${
+                  className={`flex items-center px-2 py-1 md:text-xs lg:text-base md:whitespace-nowrap lg:px-3 lg:py-2 font-medium text-gray-100 hover:text-blue-400 rounded-md ${
                     location.pathname === item.path ? 'text-orange-400' : ''
                   }`}
                 >
-                  <item.icon className="mr-1 lg:mr-2 h-4 w-4" />
+                  <item.icon className="mr-1 md:h-3 md:w-3 lg:h-4 lg:w-4" />
                   {item.label}
                 </button>
               )
@@ -112,13 +112,16 @@ const Navbar = () => {
                 </Transition>
               </Menu>
             ) : (
-              <div className="flex space-x-2 lg:space-x-4">
-                <Link to="/login" className="text-gray-100 hover:text-blue-400 px-2 py-1 lg:px-3 lg:py-2 text-sm lg:text-base font-medium rounded-md">
+              <div className="flex md:space-x-1 lg:space-x-4">
+                <Link
+                  to="/login"
+                  className="text-gray-100 hover:text-blue-400 px-2 py-1 md:text-xs lg:text-base lg:px-3 lg:py-2 font-medium rounded-md"
+                >
                   Login
                 </Link>
                 <Link
                   to="/register"
-                  className="bg-primary-600 hover:bg-primary-700 text-white px-2 py-1 lg:px-3 lg:py-2 text-sm lg:text-base font-medium rounded-md"
+                  className="bg-primary-600 hover:bg-primary-700 text-white px-2 py-1 md:text-xs lg:text-base lg:px-3 lg:py-2 font-medium rounded-md"
                 >
                   Register
                 </Link>
