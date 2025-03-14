@@ -4,7 +4,9 @@ import { useLocation, useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { fetchJobs, deleteJob } from '../redux/slices/jobsSlice';
 import { FiBriefcase, FiMapPin, FiDollarSign, FiClock, FiSearch, FiFilter, FiShare2, FiCalendar } from 'react-icons/fi';
+import { FaRupeeSign } from "react-icons/fa";
 import { toast } from 'react-toastify';
+import bg3 from '/bg-3.png';
 
 const JOBS_PER_PAGE = 5;
 
@@ -18,6 +20,9 @@ const Jobs = () => {
   const [filters, setFilters] = useState({
     type: '',
     location: '',
+    experienceLevel: '',
+    datePosted: '',
+    salaryRange: ''
   });
   const [showFilters, setShowFilters] = useState(false);
   const [sharedJobId, setSharedJobId] = useState(null);
@@ -73,13 +78,72 @@ const Jobs = () => {
     }
   }, [location, isAuthenticated, navigate, jobs]);
 
+  const parseSalary = (salaryString) => {
+    if (!salaryString) return { min: 0, max: Infinity }; // Handle undefined salary
+    const range = salaryString.split('-');
+    const min = parseFloat(range[0]);
+    const max = parseFloat(range[1]);
+    return { min, max };
+  };
+
+  const parseExperience = (experienceString) => {
+    if (!experienceString) return { type: 'Unknown', min: 0, max: Infinity }; // Handle undefined experience
+    if (experienceString === 'Internship') return { type: 'Internship', min: 0, max: 0 };
+    if (experienceString === '0 years') return { type: 'Entry-Level', min: 0, max: 0 };
+    if (experienceString.includes('-')) {
+      const range = experienceString.split('-');
+      const min = parseFloat(range[0]);
+      const max = parseFloat(range[1]);
+      return { type: 'Experienced', min, max };
+    }
+    const years = parseFloat(experienceString);
+    return { type: 'Experienced', min: years, max: years };
+  };
+
   const filteredJobs = jobs.filter(job => {
     const matchesSearch = job.title.toLowerCase().includes(searchTerm.toLowerCase()) || 
                          job.company.toLowerCase().includes(searchTerm.toLowerCase()) ||
                          job.description.toLowerCase().includes(searchTerm.toLowerCase());
     const matchesType = filters.type === '' || job.type === filters.type;
     const matchesLocation = filters.location === '' || job.location.includes(filters.location);
-    return matchesSearch && matchesType && matchesLocation;
+    const matchesExperienceLevel = filters.experienceLevel === '' || (() => {
+      const { type, min, max } = parseExperience(job.experienceLevel);
+      switch (filters.experienceLevel) {
+        case 'Internship':
+          return type === 'Internship';
+        case 'Entry-Level':
+          return type === 'Entry-Level' || (min >= 0 && max <= 1);
+        case 'Experienced':
+          return type === 'Experienced' && min > 1;
+        default:
+          return true;
+      }
+    })();
+    const matchesDatePosted = filters.datePosted === '' || {
+      'Past 24 hours': new Date(job.createdAt) > new Date(new Date().setDate(new Date().getDate() - 1)),
+      'Past Week': new Date(job.createdAt) > new Date(new Date().setDate(new Date().getDate() - 7)),
+      'Past Month': new Date(job.createdAt) > new Date(new Date().setMonth(new Date().getMonth() - 1))
+    }[filters.datePosted];
+    const matchesSalaryRange = filters.salaryRange === '' || (() => {
+      const { min: jobMin, max: jobMax } = parseSalary(job.salary);
+      const filterRange = {
+        '0-2 LPA': { min: 0, max: 2 },
+        '3-5 LPA': { min: 3, max: 5 },
+        '6-8 LPA': { min: 6, max: 8 },
+        '9-11 LPA': { min: 9, max: 11 },
+        '12-14 LPA': { min: 12, max: 14 },
+        'More than 14 LPA': { min: 14, max: Infinity }
+      }[filters.salaryRange];
+
+      if (!filterRange) return true; // If no filter range is selected, include all jobs
+
+      // Check for overlap between job's salary range and filter range
+      return (
+        jobMin <= filterRange.max && jobMax >= filterRange.min
+      );
+    })();
+
+    return matchesSearch && matchesType && matchesLocation && matchesExperienceLevel && matchesDatePosted && matchesSalaryRange;
   });
 
   const totalPages = Math.ceil(filteredJobs.length / JOBS_PER_PAGE);
@@ -98,7 +162,7 @@ const Jobs = () => {
   };
 
   const resetFilters = () => {
-    setFilters({ type: '', location: '' });
+    setFilters({ type: '', location: '', experienceLevel: '', datePosted: '', salaryRange: '' });
     setSearchTerm('');
     setCurrentPage(1);
   };
@@ -140,7 +204,7 @@ const Jobs = () => {
   };
 
   return (
-    <div className="min-h-screen bg-black bg-[url('./bg-3.png')] bg-no-repeat bg-cover bg-center py-12">
+    <div className="min-h-screen bg-black bg-no-repeat bg-cover bg-center py-12" style={{ backgroundImage: `url(${bg3})` }}>
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <motion.div
           initial={{ opacity: 0, y: -20 }}
@@ -163,7 +227,7 @@ const Jobs = () => {
                 placeholder="Search jobs by title, company, or keywords"
                 value={searchTerm}
                 onChange={handleSearchChange}
-                className="input-field pl-10 py-3"
+                className="w-full pl-10 py-3 rounded-md border border-gray-300 focus:outline-none focus:ring-2 focus:ring-primary-500"
               />
             </div>
             <button 
@@ -182,24 +246,55 @@ const Jobs = () => {
               transition={{ duration: 0.3 }}
               className="mt-4 p-4 bg-white rounded-md shadow-sm"
             >
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
                 <div>
                   <label htmlFor="type" className="block text-sm font-medium text-gray-700 mb-1">Job Type</label>
-                  <select id="type" name="type" value={filters.type} onChange={handleFilterChange} className="input-field">
+                  <select id="type" name="type" value={filters.type} onChange={handleFilterChange} className="w-full p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500">
                     <option value="">All Types</option>
                     <option value="Full-time">Full-time</option>
                     <option value="Part-time">Part-time</option>
                     <option value="Contract">Contract</option>
                     <option value="Internship">Internship</option>
+                    <option value="Remote">Remote</option>
                   </select>
                 </div>
                 <div>
                   <label htmlFor="location" className="block text-sm font-medium text-gray-700 mb-1">Location</label>
-                  <select id="location" name="location" value={filters.location} onChange={handleFilterChange} className="input-field">
+                  <select id="location" name="location" value={filters.location} onChange={handleFilterChange} className="w-full p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500">
                     <option value="">All Locations</option>
                     {locations.map((location, index) => (
                       <option key={index} value={location}>{location}</option>
                     ))}
+                  </select>
+                </div>
+                <div>
+                  <label htmlFor="experienceLevel" className="block text-sm font-medium text-gray-700 mb-1">Experience Level</label>
+                  <select id="experienceLevel" name="experienceLevel" value={filters.experienceLevel} onChange={handleFilterChange} className="w-full p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500">
+                    <option value="">All Levels</option>
+                    <option value="Internship">Internship</option>
+                    <option value="Entry-Level">Entry-Level</option>
+                    <option value="Experienced">Experienced</option>
+                  </select>
+                </div>
+                <div>
+                  <label htmlFor="datePosted" className="block text-sm font-medium text-gray-700 mb-1">Date Posted</label>
+                  <select id="datePosted" name="datePosted" value={filters.datePosted} onChange={handleFilterChange} className="w-full p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500">
+                    <option value="">Any Time</option>
+                    <option value="Past 24 hours">Past 24 hours</option>
+                    <option value="Past Week">Past Week</option>
+                    <option value="Past Month">Past Month</option>
+                  </select>
+                </div>
+                <div>
+                  <label htmlFor="salaryRange" className="block text-sm font-medium text-gray-700 mb-1">Salary Range</label>
+                  <select id="salaryRange" name="salaryRange" value={filters.salaryRange} onChange={handleFilterChange} className="w-full p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500">
+                    <option value="">All Salaries</option>
+                    <option value="0-2 LPA">0-2 LPA</option>
+                    <option value="3-5 LPA">3-5 LPA</option>
+                    <option value="6-8 LPA">6-8 LPA</option>
+                    <option value="9-11 LPA">9-11 LPA</option>
+                    <option value="12-14 LPA">12-14 LPA</option>
+                    <option value="More than 14 LPA">More than 14 LPA</option>
                   </select>
                 </div>
                 <div className="flex items-end">
@@ -232,12 +327,12 @@ const Jobs = () => {
           </div>
         ) : (
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            <div className="space-y-6"> {/* Increased from space-y-4 to space-y-6 */}
+            <div className="space-y-6">
               <motion.div variants={containerVariants} initial="hidden" animate="visible">
                 {displayedJobs.map(job => (
                   <motion.div 
                     key={job.id}
-                    className={`bg-white rounded-lg shadow-md overflow-hidden hover:shadow-lg transition-shadow duration-300 cursor-pointer mb-4 ${ /* Added mb-4 for additional bottom margin */
+                    className={`bg-white rounded-lg shadow-md overflow-hidden hover:shadow-lg transition-shadow duration-300 cursor-pointer mb-4 ${
                       selectedJob?.id === job.id ? 'ring-2 ring-primary-500' : ''
                     }`}
                     variants={itemVariants}
@@ -271,7 +366,7 @@ const Jobs = () => {
                           {job.location}
                         </div>
                         <div className="flex items-center text-sm text-gray-500">
-                          <FiDollarSign className="mr-2 h-4 w-4" />
+                          <FaRupeeSign className="mr-2 h-4 w-4" />
                           {job.salary}
                         </div>
                       </div>
@@ -280,30 +375,57 @@ const Jobs = () => {
                 ))}
               </motion.div>
 
+              {/* Pagination */}
               {totalPages > 1 && (
                 <div className="flex justify-center gap-2 mt-6">
+                  {/* Previous Button */}
                   <button
-                    onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
+                    onClick={() => {
+                      setCurrentPage(prev => Math.max(prev - 1, 1));
+                    }}
                     disabled={currentPage === 1}
                     className="px-4 py-2 bg-white rounded-md shadow hover:bg-gray-50 disabled:opacity-50"
                   >
                     Previous
                   </button>
-                  {Array.from({ length: totalPages }, (_, i) => i + 1).map(page => (
-                    <button
-                      key={page}
-                      onClick={() => setCurrentPage(page)}
-                      className={`px-4 py-2 rounded-md shadow ${
-                        currentPage === page 
-                          ? 'bg-primary-600 text-white' 
-                          : 'bg-white hover:bg-gray-50'
-                      }`}
-                    >
-                      {page}
-                    </button>
-                  ))}
+
+                  {/* Render Page Numbers */}
+                  {(() => {
+                    const pages = [];
+                    let startPage = Math.max(1, currentPage - 1); // Start from currentPage - 1
+                    let endPage = Math.min(totalPages, currentPage + 1); // End at currentPage + 1
+
+                    // Always show at least 3 pages
+                    if (currentPage === 1) {
+                      endPage = Math.min(totalPages, 3); // Show first 3 pages initially
+                    } else if (currentPage === totalPages) {
+                      startPage = Math.max(1, totalPages - 2); // Show last 3 pages
+                    }
+
+                    for (let i = startPage; i <= endPage; i++) {
+                      pages.push(
+                        <button
+                          key={i}
+                          onClick={() => setCurrentPage(i)}
+                          className={`px-4 py-2 rounded-md shadow ${
+                            currentPage === i
+                              ? 'bg-primary-600 text-white'
+                              : 'bg-white hover:bg-gray-50'
+                          }`}
+                        >
+                          {i}
+                        </button>
+                      );
+                    }
+
+                    return pages;
+                  })()}
+
+                  {/* Next Button */}
                   <button
-                    onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
+                    onClick={() => {
+                      setCurrentPage(prev => Math.min(prev + 1, totalPages));
+                    }}
                     disabled={currentPage === totalPages}
                     className="px-4 py-2 bg-white rounded-md shadow hover:bg-gray-50 disabled:opacity-50"
                   >
@@ -341,7 +463,7 @@ const Jobs = () => {
                         {selectedJob.location}
                       </div>
                       <div className="flex items-center text-gray-600">
-                        <FiDollarSign className="mr-2 h-5 w-5" />
+                        <FaRupeeSign className="mr-2 h-5 w-5" />
                         {selectedJob.salary}
                       </div>
                       <div className="flex items-center text-gray-600">

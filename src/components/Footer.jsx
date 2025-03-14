@@ -1,13 +1,16 @@
 import { Link } from 'react-router-dom';
-import { FiGithub, FiTwitter, FiLinkedin, FiMail } from 'react-icons/fi';
+import { FiLinkedin, FiMail, FiInstagram, FiYoutube } from 'react-icons/fi';
+import { FaXTwitter, FaFacebook } from "react-icons/fa6";
+import { useNavigate } from 'react-router-dom';
 
 const Footer = () => {
   const currentYear = new Date().getFullYear();
+  const navigate = useNavigate();
 
   const links = {
     company: [
-      { label: 'About Us', href: '#' },
-      { label: 'Contact', href: '#' },
+      { label: 'About Us', path: '/About' },
+      { label: 'Contact', path: '/Contactus' },
       { label: 'Privacy Policy', href: '#' },
       { label: 'Terms of Service', href: '#' }
     ],
@@ -18,10 +21,12 @@ const Footer = () => {
       { label: 'Student Guide', href: '#' }
     ],
     social: [
-      { label: 'GitHub', href: '#', icon: FiGithub },
-      { label: 'Twitter', href: '#', icon: FiTwitter },
-      { label: 'LinkedIn', href: '#', icon: FiLinkedin },
-      { label: 'Email', href: 'mailto:contact@studentportal.com', icon: FiMail }
+      { label: 'Instagram', href: 'https://www.instagram.com/socialprachar_institute/', icon: FiInstagram },
+      { label: 'Twitter', href: 'https://x.com/social_prachar', icon: FaXTwitter },
+      { label: 'LinkedIn', href: 'https://www.linkedin.com/company/socialprachar-com/posts/?feedView=all', icon: FiLinkedin },
+      { label: 'Email', href: 'mailto:connect@socialhire.in', icon: FiMail },
+      { label: 'Youtube', href: 'https://www.youtube.com/@socialprachar', icon: FiYoutube },
+      { label: 'Facebook', href: 'https://x.com/social_prachar', icon: FaFacebook }
     ]
   };
 
@@ -31,7 +36,11 @@ const Footer = () => {
         <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
           {/* Brand Section */}
           <div className="col-span-1">
-            <Link to="/" className="text-primary-100 font-bold text-xl">
+            <Link to="/" className="text-primary-100 font-extrabold text-2xl" style={{
+              background: 'linear-gradient(to right, #0284c7 44%, #CFA575 66%)',
+              WebkitBackgroundClip: 'text',
+              WebkitTextFillColor: 'transparent',
+            }}>
               SocialHire
             </Link>
             <p className="mt-4 text-sm text-gray-100">
@@ -47,12 +56,21 @@ const Footer = () => {
             <ul className="mt-4 space-y-4">
               {links.company.map((link) => (
                 <li key={link.label}>
-                  <a
-                    href={link.href}
-                    className="text-base text-gray-100 hover:text-primary-600"
-                  >
-                    {link.label}
-                  </a>
+                  {link.path ? (
+                    <Link
+                      to={link.path}
+                      className="text-base text-gray-100 hover:text-primary-600"
+                    >
+                      {link.label}
+                    </Link>
+                  ) : (
+                    <a
+                      href={link.href}
+                      className="text-base text-gray-100 hover:text-primary-600"
+                    >
+                      {link.label}
+                    </a>
+                  )}
                 </li>
               ))}
             </ul>
@@ -87,6 +105,8 @@ const Footer = () => {
                 <li key={link.label}>
                   <a
                     href={link.href}
+                    target="_blank"
+                    rel="noopener noreferrer"
                     className="text-base text-gray-100 hover:text-primary-600 flex items-center"
                   >
                     <link.icon className="h-5 w-5 mr-2" />
@@ -108,6 +128,8 @@ const Footer = () => {
                 <a
                   key={link.label}
                   href={link.href}
+                  target="_blank"
+                  rel="noopener noreferrer"
                   className="text-gray-100 hover:text-primary-600"
                 >
                   <span className="sr-only">{link.label}</span>

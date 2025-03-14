@@ -7,6 +7,7 @@ import { db } from '../firebase/config';
 import { setUser } from '../redux/slices/authSlice';
 import { toast } from 'react-toastify';
 import { FiUser, FiMail, FiPhone, FiMapPin, FiBook, FiAward, FiBriefcase, FiLink, FiEdit } from 'react-icons/fi';
+import bgh3 from '/bg-3.png';
 
 const Profile = () => {
   const { user } = useSelector(state => state.auth);
@@ -409,7 +410,7 @@ const Profile = () => {
   );
 
   return (
-    <div className="min-h-screen bg-black py-12 bg-[url('./bg-3.png')] bg-cover bg-center bg-no-repeat">
+    <div className="min-h-screen bg-black py-12 bg-cover bg-center bg-no-repeat"  style={{ backgroundImage: `url(${bgh3})` }}>
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <motion.div
           initial={{ opacity: 0, y: 20 }}
@@ -417,7 +418,7 @@ const Profile = () => {
           transition={{ duration: 0.5 }}
           className="bg-white rounded-lg shadow-lg overflow-hidden"
         >
-          <div className="bg-[url('./src/assets/backgroundimgs/bg-3.png')] bg-black bg-cover bg-center px-6 py-8 text-white">
+          <div className=" bg-black bg-cover bg-center px-6 py-8 text-white"  style={{ backgroundImage: `url(${bgh3})` }}>
             <h1 className="text-3xl font-bold">Digital Profile</h1>
             <p className="mt-2">Manage your professional information</p>
           </div>

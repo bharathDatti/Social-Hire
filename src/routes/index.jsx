@@ -13,6 +13,8 @@ import Placement from '../pages/Placement';
 import ResumeBuilder from '../pages/ResumeBuilder';
 import CodeLabs from '../pages/CodeLabs';
 import AdminDashboard from '../pages/admin/AdminDashboard';
+import About from '../pages/About';
+import ContactUs from "../Pages/ContactUs"
 import NotFound from '../pages/NotFound';
 
 const AppRoutes = () => {
@@ -98,6 +100,24 @@ const AppRoutes = () => {
           </ProtectedRoute>
         } 
       />
+      <Route 
+      path='/About'
+      element={
+        <ProtectedRoute>
+          <About/>
+        </ProtectedRoute>
+      }
+      />
+      <Route
+      path='/Contactus'
+      element={
+        <ProtectedRoute>
+          <ContactUs/>
+        </ProtectedRoute>
+
+      }
+      />
+      
       
       <Route path="/404" element={<NotFound />} />
       <Route path="*" element={<Navigate to="/404" replace />} />

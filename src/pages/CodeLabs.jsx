@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { motion } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
 import { 
   RiCodeSLine, 
   RiDatabase2Line, 
@@ -12,26 +12,74 @@ import {
   RiVuejsLine, 
   RiNodejsLine, 
   RiJavascriptLine, 
-  RiCodeBoxLine,   // For Python, Ruby, PHP, Go
+  RiCodeBoxLine,
   RiDatabaseLine, 
-  RiBox3Line,      // For Docker
-  RiStackLine,     // For Kubernetes
+  RiBox3Line,
+  RiStackLine,
   RiGoogleLine, 
-  RiBrainLine,     // For TensorFlow, PyTorch
-  RiHtml5Line,     // For HTML5
-  RiCss3Line,      // For CSS3
-  RiJavaLine,      // For Java
-  RiTerminalLine,  // For Bash/Shell
-  RiServerLine,    // For Redis, SQLite
-  RiGitMergeLine,  // For Git
-  RiRocketLine,    // For Terraform, Ansible
-  RiPieChartLine,  // Replaced RiChartPieLine (for Matplotlib, Seaborn)
-  RiFileCodeLine,  // For DSA Practice
-  RiSettings5Line, // For Jenkins
-  RiFileListLine,  // For TypeScript
-  RiShieldLine,    // For Competitive Programming (placeholder)
-  RiTableLine      // For NumPy
+  RiBrainLine,
+  RiHtml5Line,
+  RiCss3Line,
+  RiJavaLine,
+  RiTerminalLine,
+  RiServerLine,
+  RiGitMergeLine,
+  RiRocketLine,
+  RiPieChartLine,
+  RiFileCodeLine,
+  RiSettings5Line,
+  RiFileListLine,
+  RiShieldLine,
+  RiTableLine
 } from 'react-icons/ri';
+import bg3 from '/bg-3.png';
+
+const TechnologyCard = ({ tech }) => {
+  const [isHovered, setIsHovered] = useState(false);
+
+  return (
+    <motion.div
+      className="relative bg-white bg-opacity-10 backdrop-blur-lg rounded-lg p-6 flex flex-col items-center transition-all duration-300 group min-h-[250px]"
+      onHoverStart={() => setIsHovered(true)}
+      onHoverEnd={() => setIsHovered(false)}
+      variants={{
+        hidden: { y: 20, opacity: 0 },
+        visible: {
+          y: 0,
+          opacity: 1,
+          transition: { duration: 0.3 }
+        }
+      }}
+    >
+      <div className={`flex flex-col items-center transition-opacity duration-300 ${isHovered ? 'opacity-60' : 'opacity-100'}`}>
+        <tech.icon className={`h-12 w-12 ${tech.color} mb-4`} />
+        <h3 className="text-lg font-semibold text-white mb-2">{tech.name}</h3>
+        <p className="text-sm text-gray-300 text-center">{tech.description}</p>
+      </div>
+      
+      <AnimatePresence>
+        {isHovered && (
+          <motion.div
+            className="absolute bottom-6 left-0 right-0 flex justify-center"
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: 10 }}
+            transition={{ duration: 0.2 }}
+          >
+            <a
+              href="https://labs.socialhire.in/register"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="bg-primary-600 text-white px-6 py-2 rounded-full font-medium hover:bg-primary-700 transition-colors duration-200"
+            >
+              Explore Now
+            </a>
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </motion.div>
+  );
+};
 
 const CodeLabs = () => {
   const [selectedCategory, setSelectedCategory] = useState('all');
@@ -236,7 +284,7 @@ const CodeLabs = () => {
       category: 'devops',
       icon: RiGoogleLine,
       color: 'text-red-500',
-      description: 'Google’s suite of cloud computing services.'
+      description: 'Google suite of cloud computing services.'
     },
     {
       id: 25,
@@ -308,7 +356,7 @@ const CodeLabs = () => {
       id: 28,
       name: 'Matplotlib',
       category: 'data',
-      icon: RiPieChartLine, // Replaced RiChartPieLine
+      icon: RiPieChartLine,
       color: 'text-green-500',
       description: 'A plotting library for creating visualizations in Python.'
     },
@@ -324,7 +372,7 @@ const CodeLabs = () => {
       id: 37,
       name: 'Seaborn',
       category: 'data',
-      icon: RiPieChartLine, // Replaced RiChartPieLine
+      icon: RiPieChartLine,
       color: 'text-purple-600',
       description: 'A statistical data visualization library based on Matplotlib.'
     },
@@ -369,7 +417,7 @@ const CodeLabs = () => {
     : technologies.filter(tech => tech.category === selectedCategory);
 
   return (
-    <div className="min-h-screen bg-black bg-[url('./bg-3.png')] bg-no-repeat bg-cover bg-center py-12">
+    <div className="min-h-screen bg-black  bg-no-repeat bg-cover bg-center py-12" style={{ backgroundImage: `url(${bg3})` }}>
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <motion.div
           initial={{ opacity: 0, y: -20 }}
@@ -383,7 +431,6 @@ const CodeLabs = () => {
           </p>
         </motion.div>
 
-        {/* Categories */}
         <div className="flex flex-wrap gap-2 mb-8 justify-center">
           {categories.map((category) => (
             <button
@@ -401,7 +448,6 @@ const CodeLabs = () => {
           ))}
         </div>
 
-        {/* Technologies Grid */}
         <motion.div 
           className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6"
           initial="hidden"
@@ -417,26 +463,10 @@ const CodeLabs = () => {
           }}
         >
           {filteredTechnologies.map((tech) => (
-            <motion.div
-              key={tech.id}
-              className="bg-white bg-opacity-10 backdrop-blur-lg rounded-lg p-6 flex flex-col items-center hover:transform hover:scale-105 transition-all duration-300"
-              variants={{
-                hidden: { y: 20, opacity: 0 },
-                visible: {
-                  y: 0,
-                  opacity: 1,
-                  transition: { duration: 0.3 }
-                }
-              }}
-            >
-              <tech.icon className={`h-12 w-12 ${tech.color} mb-4`} />
-              <h3 className="text-lg font-semibold text-white mb-2">{tech.name}</h3>
-              <p className="text-sm text-gray-300 text-center">{tech.description}</p>
-            </motion.div>
+            <TechnologyCard key={tech.id} tech={tech} />
           ))}
         </motion.div>
 
-        {/* Learn More Button */}
         <div className="mt-12 text-center">
           <a
             href="https://labs.socialhire.in/register"

@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Routes, Route, Link, useLocation, useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { FiUsers, FiBriefcase, FiCalendar, FiUser, FiMenu, FiX, FiChevronLeft, FiChevronRight, FiBook } from 'react-icons/fi';
@@ -16,6 +16,11 @@ const AdminDashboard = () => {
   const navigate = useNavigate();
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
   const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState(false);
+
+  // Close mobile sidebar on route change
+  useEffect(() => {
+    setIsMobileSidebarOpen(false);
+  }, [location.pathname]);
 
   const toggleSidebar = () => {
     setIsSidebarOpen(!isSidebarOpen);
@@ -65,36 +70,35 @@ const AdminDashboard = () => {
           {isMobileSidebarOpen ? <FiX className="h-6 w-6" /> : <FiMenu className="h-6 w-6" />}
         </button>
       </div>
-      
+
       {/* Desktop Sidebar Toggle */}
-      <div className="hidden lg:block fixed top-20 left-0 z-20">
-        <button
-          onClick={toggleSidebar}
-          className={`p-2 rounded-r-md bg-white shadow-md text-gray-700 hover:text-primary-600 focus:outline-none transition-transform duration-300 ${
-            isSidebarOpen ? 'transform translate-x-64' : ''
-          }`}
-        >
-          {isSidebarOpen ? <FiChevronLeft className="h-6 w-6" /> : <FiChevronRight className="h-6 w-6" />}
-        </button>
-      </div>
-      
+      <button
+        onClick={toggleSidebar}
+        className="hidden lg:flex fixed top-15 left-4 z-20 p-2 bg-white shadow-md rounded-full text-gray-700 hover:text-primary-600"
+      >
+        {isSidebarOpen ? <FiChevronLeft size={25} /> : <FiChevronRight size={25} />}
+      </button>
+
       {/* Sidebar */}
-      <div 
-        className={`fixed inset-y-0 left-0 transform ${
-          isMobileSidebarOpen ? 'translate-x-0' : '-translate-x-full'
-        } lg:translate-x-0 transition duration-300 ease-in-out z-10 w-64 bg-white shadow-lg pt-20 ${
-          !isSidebarOpen && 'lg:-translate-x-full'
-        }`}
+      <div
+        className={`fixed inset-y-0 left-0 transform transition-transform duration-300 ease-in-out z-10 w-64 bg-white shadow-lg pt-20
+          ${isMobileSidebarOpen ? 'translate-x-0' : '-translate-x-full'}
+          ${isSidebarOpen ? 'lg:translate-x-0' : 'lg:-translate-x-full'}`}
       >
         <div className="px-4 py-6">
           <h2 className="text-xl font-bold text-gray-800 mb-6">Admin Dashboard</h2>
-          
+
           <nav className="space-y-1">
             <Link
               to="/admin"
               onClick={closeMobileSidebar}
               className={`flex items-center px-4 py-3 text-sm font-medium rounded-md ${
-                isActive('/admin') && !isActive('/admin/mentors') && !isActive('/admin/students') && !isActive('/admin/jobs') && !isActive('/admin/sessions') && !isActive('/admin/placement')
+                isActive('/admin') &&
+                !isActive('/admin/mentors') &&
+                !isActive('/admin/students') &&
+                !isActive('/admin/jobs') &&
+                !isActive('/admin/sessions') &&
+                !isActive('/admin/placement')
                   ? 'bg-primary-100 text-primary-700'
                   : 'text-gray-700 hover:bg-gray-100'
               }`}
@@ -102,7 +106,7 @@ const AdminDashboard = () => {
               <FiUser className="mr-3 h-5 w-5" />
               Overview
             </Link>
-            
+
             <Link
               to="/admin/mentors"
               onClick={closeMobileSidebar}
@@ -115,7 +119,7 @@ const AdminDashboard = () => {
               <FiUsers className="mr-3 h-5 w-5" />
               Mentors
             </Link>
-            
+
             <Link
               to="/admin/students"
               onClick={closeMobileSidebar}
@@ -128,7 +132,7 @@ const AdminDashboard = () => {
               <FiUsers className="mr-3 h-5 w-5" />
               Students
             </Link>
-            
+
             <Link
               to="/admin/jobs"
               onClick={closeMobileSidebar}
@@ -141,7 +145,7 @@ const AdminDashboard = () => {
               <FiBriefcase className="mr-3 h-5 w-5" />
               Jobs
             </Link>
-            
+
             <Link
               to="/admin/sessions"
               onClick={closeMobileSidebar}
@@ -170,11 +174,11 @@ const AdminDashboard = () => {
           </nav>
         </div>
       </div>
-      
+
       {/* Overlay */}
       <AnimatePresence>
         {isMobileSidebarOpen && (
-          <motion.div 
+          <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
@@ -183,13 +187,9 @@ const AdminDashboard = () => {
           ></motion.div>
         )}
       </AnimatePresence>
-      
+
       {/* Main content */}
-      <div 
-        className={`transition-all duration-300 ${
-          isSidebarOpen ? 'lg:pl-64' : 'lg:pl-0'
-        } pt-20`}
-      >
+      <div className={`transition-all duration-300 ${isSidebarOpen ? 'lg:pl-64' : 'lg:pl-0'} pt-20`}>
         <main className="py-6 px-4 sm:px-6 lg:px-8">
           <motion.div
             initial={{ opacity: 0, y: 20 }}
@@ -197,12 +197,18 @@ const AdminDashboard = () => {
             transition={{ duration: 0.5 }}
           >
             <Routes>
-              <Route path="/" element={<AdminOverview 
-                onAddMentor={handleAddMentor}
-                onPostJob={handlePostJob}
-                onScheduleWebinar={handleScheduleWebinar}
-                onViewStudents={handleViewStudents}
-              />} />
+              <Route
+                path="/"
+                element={
+                  <AdminOverview
+                    onAddMentor={handleAddMentor}
+                    onPostJob={handlePostJob}
+                    onScheduleWebinar={handleScheduleWebinar}
+                    onViewStudents={handleViewStudents}
+                    onManagePlacement={handleManagePlacement}
+                  />
+                }
+              />
               <Route path="/mentors" element={<MentorsCRUD />} />
               <Route path="/students" element={<StudentsCRUD />} />
               <Route path="/jobs" element={<JobsCRUD />} />

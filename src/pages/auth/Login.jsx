@@ -6,6 +6,7 @@ import { motion } from 'framer-motion';
 import { loginUser, googleLogin, clearError } from '../../redux/slices/authSlice';
 import { FiMail, FiLock, FiAlertCircle } from 'react-icons/fi';
 import { FcGoogle } from 'react-icons/fc';
+import bg3 from '/bg-3.png';
 
 const Login = () => {
   const { register, handleSubmit, formState: { errors } } = useForm();
@@ -43,7 +44,7 @@ const Login = () => {
   };
 
   return (
-    <div className="min-h-screen bg-black  bg-[url('./bg-3.png')] bg-no-repeat bg-cover bg-center flex items-center justify-center px-4 sm:px-6 lg:px-8">
+    <div className="min-h-screen bg-black bg-no-repeat bg-cover bg-center flex items-center justify-center px-4 sm:px-6 lg:px-8" style={{ backgroundImage: `url(${bg3})` }}>
       <motion.div 
         className="max-w-md w-full bg-white rounded-lg shadow-xl overflow-hidden"
         initial={{ opacity: 0, y: 20 }}
@@ -56,15 +57,6 @@ const Login = () => {
             <p className="mt-2 text-sm text-gray-600">
               Sign in to your {isAdminLogin ? 'admin' : ''} account
             </p>
-          </div>
-
-          <div className="mt-4 flex justify-center">
-            <button
-              onClick={() => setIsAdminLogin(!isAdminLogin)}
-              className="text-sm text-primary-600 hover:text-primary-800 font-medium"
-            >
-              Switch to {isAdminLogin ? 'User' : 'Admin'} Login
-            </button>
           </div>
 
           {showError && error && (
@@ -161,6 +153,17 @@ const Login = () => {
                 ) : `Sign in as ${isAdminLogin ? 'Admin' : 'User'}`}
               </button>
             </div>
+
+            {isAdminLogin && (
+              <div className="mt-4 flex justify-center">
+                <button
+                  onClick={() => setIsAdminLogin(!isAdminLogin)}
+                  className="text-sm text-primary-600 hover:text-primary-800 font-medium"
+                >
+                  Switch to User Login
+                </button>
+              </div>
+            )}
           </form>
 
           {!isAdminLogin && (
@@ -195,6 +198,15 @@ const Login = () => {
                     Sign up
                   </Link>
                 </p>
+              </div>
+
+              <div className="mt-4 flex justify-center">
+                <button
+                  onClick={() => setIsAdminLogin(!isAdminLogin)}
+                  className="text-sm text-primary-600 hover:text-primary-800 font-medium"
+                >
+                  Switch to Admin Login
+                </button>
               </div>
             </>
           )}
