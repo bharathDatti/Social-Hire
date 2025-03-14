@@ -1,53 +1,54 @@
 import { createSlice, createAsyncThunk } from '@reduxjs/toolkit';
-import { collection, getDocs, addDoc, updateDoc, deleteDoc, doc, query, orderBy, getDoc } from 'firebase/firestore';
+import { collection, onSnapshot, addDoc, updateDoc, deleteDoc, doc, query, orderBy } from 'firebase/firestore';
 import { db } from '../../firebase/config';
 
-export const fetchWebinarsAndSessions = createAsyncThunk(
-  'webinars/fetchWebinarsAndSessions',
-  async (_, { rejectWithValue }) => {
+export const subscribeToWebinarsAndSessions = createAsyncThunk(
+  'webinars/subscribeToWebinarsAndSessions',
+  async (_, { dispatch, rejectWithValue }) => {
     try {
-      // Fetch webinars
+      const unsubscribeFunctions = {};
+
       const webinarsQuery = query(collection(db, 'webinars'), orderBy('date', 'desc'));
-      const webinarsSnapshot = await getDocs(webinarsQuery);
-      const webinars = webinarsSnapshot.docs.map(doc => ({
-        id: doc.id,
-        ...doc.data(),
-        type: 'webinar'
-      }));
+      unsubscribeFunctions.webinars = onSnapshot(
+        webinarsQuery,
+        (snapshot) => {
+          const webinars = snapshot.docs.map(doc => ({
+            id: doc.id,
+            ...doc.data(),
+            type: 'webinar'
+          }));
 
-      // Fetch sessions
-      const sessionsQuery = query(collection(db, 'sessions'), orderBy('date', 'desc'));
-      const sessionsSnapshot = await getDocs(sessionsQuery);
-      
-      // Fetch mentor details for each session
-      const sessions = await Promise.all(sessionsSnapshot.docs.map(async (docSnapshot) => {
-        const sessionData = docSnapshot.data();
-        let mentorData = null;
-        
-        if (sessionData.mentorId) {
-          const mentorDoc = await getDoc(doc(db, 'mentors', sessionData.mentorId));
-          if (mentorDoc.exists()) {
-            mentorData = mentorDoc.data();
-          }
+          const sessionsQuery = query(collection(db, 'sessions'), orderBy('date', 'desc'));
+          unsubscribeFunctions.sessions = onSnapshot(
+            sessionsQuery,
+            (sessionsSnapshot) => {
+              const sessions = sessionsSnapshot.docs.map(doc => ({
+                id: doc.id,
+                ...doc.data(),
+                type: 'session',
+                mentorName: doc.data().mentor?.name || 'Unknown Mentor',
+                mentorExpertise: doc.data().mentor?.expertise || ''
+              }));
+
+              const combined = [...webinars, ...sessions];
+              dispatch(setItems(combined));
+            },
+            (error) => {
+              dispatch(setError(error.message || 'Failed to subscribe to sessions'));
+            }
+          );
+        },
+        (error) => {
+          dispatch(setError(error.message || 'Failed to subscribe to webinars'));
         }
-        
-        return {
-          id: docSnapshot.id,
-          ...sessionData,
-          mentorName: mentorData?.name || 'Unknown Mentor',
-          mentorExpertise: mentorData?.expertise || '',
-          type: 'session'
-        };
-      }));
-
-      // Combine and sort by date
-      const combined = [...webinars, ...sessions].sort((a, b) => 
-        new Date(b.date) - new Date(a.date)
       );
 
-      return combined;
+      return () => {
+        if (unsubscribeFunctions.webinars) unsubscribeFunctions.webinars();
+        if (unsubscribeFunctions.sessions) unsubscribeFunctions.sessions();
+      };
     } catch (error) {
-      return rejectWithValue(error.message);
+      return rejectWithValue(error.message || 'Failed to subscribe to data');
     }
   }
 );
@@ -59,10 +60,11 @@ export const addWebinar = createAsyncThunk(
       const docRef = await addDoc(collection(db, 'webinars'), {
         ...webinarData,
         createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
       });
       return { id: docRef.id, ...webinarData, type: 'webinar' };
     } catch (error) {
-      return rejectWithValue(error.message);
+      return rejectWithValue(error.message || 'Failed to add webinar');
     }
   }
 );
@@ -72,10 +74,14 @@ export const updateWebinar = createAsyncThunk(
   async ({ id, ...webinarData }, { rejectWithValue }) => {
     try {
       const webinarRef = doc(db, 'webinars', id);
-      await updateDoc(webinarRef, webinarData);
-      return { id, ...webinarData, type: 'webinar' };
+      const updatedData = {
+        ...webinarData,
+        updatedAt: new Date().toISOString(),
+      };
+      await updateDoc(webinarRef, updatedData);
+      return { id, ...updatedData, type: 'webinar' };
     } catch (error) {
-      return rejectWithValue(error.message);
+      return rejectWithValue(error.message || 'Failed to update webinar');
     }
   }
 );
@@ -87,7 +93,7 @@ export const deleteWebinar = createAsyncThunk(
       await deleteDoc(doc(db, 'webinars', id));
       return id;
     } catch (error) {
-      return rejectWithValue(error.message);
+      return rejectWithValue(error.message || 'Failed to delete webinar');
     }
   }
 );
@@ -96,48 +102,83 @@ const initialState = {
   items: [],
   loading: false,
   error: null,
+  unsubscribe: null,
 };
 
 const webinarsSlice = createSlice({
   name: 'webinars',
   initialState,
   reducers: {
+    setItems: (state, action) => {
+      state.items = action.payload;
+      state.loading = false;
+    },
+    setError: (state, action) => {
+      state.error = action.payload;
+      state.loading = false;
+    },
     clearWebinarsError: (state) => {
       state.error = null;
+    },
+    clearWebinars: (state) => {
+      state.items = [];
+      state.loading = false;
+      state.error = null;
+      if (state.unsubscribe) {
+        state.unsubscribe();
+        state.unsubscribe = null;
+      }
     },
   },
   extraReducers: (builder) => {
     builder
-      // Fetch Webinars and Sessions
-      .addCase(fetchWebinarsAndSessions.pending, (state) => {
+      .addCase(subscribeToWebinarsAndSessions.pending, (state) => {
         state.loading = true;
         state.error = null;
       })
-      .addCase(fetchWebinarsAndSessions.fulfilled, (state, action) => {
+      .addCase(subscribeToWebinarsAndSessions.fulfilled, (state, action) => {
         state.loading = false;
-        state.items = action.payload;
+        state.unsubscribe = action.payload;
       })
-      .addCase(fetchWebinarsAndSessions.rejected, (state, action) => {
+      .addCase(subscribeToWebinarsAndSessions.rejected, (state, action) => {
         state.loading = false;
         state.error = action.payload;
       })
-      // Add Webinar
-      .addCase(addWebinar.fulfilled, (state, action) => {
-        state.items.push(action.payload);
+      .addCase(addWebinar.pending, (state) => {
+        state.loading = true;
+        state.error = null;
       })
-      // Update Webinar
-      .addCase(updateWebinar.fulfilled, (state, action) => {
-        const index = state.items.findIndex(item => item.id === action.payload.id);
-        if (index !== -1) {
-          state.items[index] = action.payload;
-        }
+      .addCase(addWebinar.fulfilled, (state) => {
+        state.loading = false;
       })
-      // Delete Webinar
-      .addCase(deleteWebinar.fulfilled, (state, action) => {
-        state.items = state.items.filter(item => item.id !== action.payload);
+      .addCase(addWebinar.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.payload;
+      })
+      .addCase(updateWebinar.pending, (state) => {
+        state.loading = true;
+        state.error = null;
+      })
+      .addCase(updateWebinar.fulfilled, (state) => {
+        state.loading = false;
+      })
+      .addCase(updateWebinar.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.payload;
+      })
+      .addCase(deleteWebinar.pending, (state) => {
+        state.loading = true;
+        state.error = null;
+      })
+      .addCase(deleteWebinar.fulfilled, (state) => {
+        state.loading = false;
+      })
+      .addCase(deleteWebinar.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.payload;
       });
   },
 });
 
-export const { clearWebinarsError } = webinarsSlice.actions;
+export const { setItems, setError, clearWebinarsError, clearWebinars } = webinarsSlice.actions;
 export default webinarsSlice.reducer;

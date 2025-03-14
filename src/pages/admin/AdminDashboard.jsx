@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { Routes, Route, Link, useLocation, useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import { FiUsers, FiBriefcase, FiCalendar, FiUser, FiMenu, FiX, FiChevronLeft, FiChevronRight } from 'react-icons/fi';
+import { FiUsers, FiBriefcase, FiCalendar, FiUser, FiMenu, FiX, FiChevronLeft, FiChevronRight, FiBook } from 'react-icons/fi';
 
 // Admin Components
 import MentorsCRUD from './MentorsCRUD';
@@ -9,6 +9,7 @@ import StudentsCRUD from './StudentsCRUD';
 import JobsCRUD from './JobsCRUD';
 import SessionsCRUD from './SessionsCRUD';
 import AdminOverview from './AdminOverview';
+import PlacementCRUD from './PlacementCRUD';
 
 const AdminDashboard = () => {
   const location = useLocation();
@@ -47,6 +48,10 @@ const AdminDashboard = () => {
 
   const handleViewStudents = () => {
     navigate('/admin/students');
+  };
+
+  const handleManagePlacement = () => {
+    navigate('/admin/placement');
   };
 
   return (
@@ -89,7 +94,7 @@ const AdminDashboard = () => {
               to="/admin"
               onClick={closeMobileSidebar}
               className={`flex items-center px-4 py-3 text-sm font-medium rounded-md ${
-                isActive('/admin') && !isActive('/admin/mentors') && !isActive('/admin/students') && !isActive('/admin/jobs') && !isActive('/admin/sessions')
+                isActive('/admin') && !isActive('/admin/mentors') && !isActive('/admin/students') && !isActive('/admin/jobs') && !isActive('/admin/sessions') && !isActive('/admin/placement')
                   ? 'bg-primary-100 text-primary-700'
                   : 'text-gray-700 hover:bg-gray-100'
               }`}
@@ -149,6 +154,19 @@ const AdminDashboard = () => {
               <FiCalendar className="mr-3 h-5 w-5" />
               Sessions
             </Link>
+
+            <Link
+              to="/admin/placement"
+              onClick={closeMobileSidebar}
+              className={`flex items-center px-4 py-3 text-sm font-medium rounded-md ${
+                isActive('/admin/placement')
+                  ? 'bg-primary-100 text-primary-700'
+                  : 'text-gray-700 hover:bg-gray-100'
+              }`}
+            >
+              <FiBook className="mr-3 h-5 w-5" />
+              Placement
+            </Link>
           </nav>
         </div>
       </div>
@@ -189,6 +207,7 @@ const AdminDashboard = () => {
               <Route path="/students" element={<StudentsCRUD />} />
               <Route path="/jobs" element={<JobsCRUD />} />
               <Route path="/sessions" element={<SessionsCRUD />} />
+              <Route path="/placement" element={<PlacementCRUD />} />
             </Routes>
           </motion.div>
         </main>

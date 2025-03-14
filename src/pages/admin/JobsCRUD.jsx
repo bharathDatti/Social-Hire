@@ -17,6 +17,7 @@ const JobsCRUD = () => {
     dispatch(fetchJobs());
   }, [dispatch]);
 
+  // Helper functions for job status
   const calculateTimeRemaining = (expiryDate) => {
     if (!expiryDate) return null;
     
@@ -40,19 +41,20 @@ const JobsCRUD = () => {
 
   const isAboutToExpire = (expiryDate) => {
     if (!expiryDate) return false;
-    
     const now = new Date().getTime();
     const expiry = new Date(expiryDate).getTime();
     const timeLeft = expiry - now;
-    
     return timeLeft > 0 && timeLeft <= 24 * 60 * 60 * 1000;
   };
 
+  // Calculate job counts
+  const totalJobs = jobs.length;
+  const activeJobs = jobs.filter(job => !job.expiryDate || !isExpired(job.expiryDate)).length;
+  const expiredJobs = jobs.filter(job => job.expiryDate && isExpired(job.expiryDate)).length;
+
   const openModal = (job = null) => {
     setCurrentJob(job);
-    
     if (job) {
-      // Edit mode - populate form
       setValue('title', job.title);
       setValue('company', job.company);
       setValue('location', job.location);
@@ -63,7 +65,6 @@ const JobsCRUD = () => {
       setValue('applicationUrl', job.applicationUrl || '');
       setValue('expiryDate', job.expiryDate ? new Date(job.expiryDate).toISOString().slice(0, 16) : '');
     } else {
-      // Add mode - reset form
       reset({
         title: '',
         company: '',
@@ -76,7 +77,6 @@ const JobsCRUD = () => {
         expiryDate: ''
       });
     }
-    
     setIsModalOpen(true);
   };
 
@@ -120,6 +120,22 @@ const JobsCRUD = () => {
 
   return (
     <div>
+      {/* Job Counts Section */}
+      <div className="mb-6 grid grid-cols-1 sm:grid-cols-3 gap-4">
+        <div className="bg-white rounded-lg shadow-md p-4">
+          <h3 className="text-sm font-medium text-gray-500">Total Jobs</h3>
+          <p className="text-2xl font-bold text-gray-900">{totalJobs}</p>
+        </div>
+        <div className="bg-white rounded-lg shadow-md p-4">
+          <h3 className="text-sm font-medium text-gray-500">Active Jobs</h3>
+          <p className="text-2xl font-bold text-green-600">{activeJobs}</p>
+        </div>
+        <div className="bg-white rounded-lg shadow-md p-4">
+          <h3 className="text-sm font-medium text-gray-500">Expired Jobs</h3>
+          <p className="text-2xl font-bold text-red-600">{expiredJobs}</p>
+        </div>
+      </div>
+
       <div className="flex justify-between items-center mb-6">
         <h1 className="text-2xl font-bold text-gray-900">Manage Jobs</h1>
         <button
@@ -240,7 +256,7 @@ const JobsCRUD = () => {
           </div>
         )}
       </div>
-      
+
       {/* Add/Edit Modal */}
       {isModalOpen && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
