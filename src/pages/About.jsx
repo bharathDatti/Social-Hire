@@ -90,8 +90,8 @@ const About = () => {
                         className="flex items-start space-x-4 p-6 rounded-lg backdrop-blur-md bg-white/10 border border-white/10"
                         variants={itemVariants}
                     >
-                        <div className="bg-gray-400 rounded-2xl p-1 text-2xl">
-                            <FaSearch className=' text-black/75 ' />
+                        <div className="bg-gray-200 rounded-2xl p-1 text-2xl">
+                            <FaSearch className=' text-purple-500 ' />
                         </div>
                         <div>
                             <h3 className="text-xl font-semibold">Job Search & Applications</h3>
@@ -104,8 +104,8 @@ const About = () => {
                         className="flex items-start space-x-4 p-6 rounded-lg backdrop-blur-md bg-white/10 border border-white/10"
                         variants={itemVariants}
                     >
-                        <div className="bg-gray-400 rounded-2xl p-1 text-2xl">
-                            <FaUser className=' text-black/75 ' />
+                        <div className="bg-gray-200 rounded-2xl p-1 text-2xl">
+                            <FaUser className=' text-purple-500 ' />
                         </div>
                         <div>
                             <h3 className="text-xl font-semibold">Personalized Mentorship</h3>
@@ -118,8 +118,8 @@ const About = () => {
                         className="flex items-start space-x-4 p-6 rounded-lg backdrop-blur-md bg-white/10 border border-white/10"
                         variants={itemVariants}
                     >
-                        <div className="bg-gray-400 rounded-2xl p-1 text-2xl">
-                            <FaFileAlt className=' text-black/75 ' />
+                        <div className="bg-gray-200 rounded-2xl p-1 text-2xl">
+                            <FaFileAlt className=' text-primary-500 ' />
                         </div>
                         <div>
                             <h3 className="text-xl font-semibold">AI-Powered Resume & Interview Tools</h3>
@@ -132,8 +132,8 @@ const About = () => {
                         className="flex items-start space-x-4 p-6 rounded-lg backdrop-blur-md bg-white/10 border border-white/10"
                         variants={itemVariants}
                     >
-                        <div className="bg-gray-400 rounded-2xl p-1 text-2xl">
-                            <FaNetworkWired className=' text-black/75 ' />
+                        <div className="bg-gray-200 rounded-2xl p-1 text-2xl">
+                            <FaNetworkWired className=' text-primary-500 ' />
                         </div>
                         <div>
                             <h3 className="text-xl font-semibold">Digital Resumes & Career Portfolios</h3>
@@ -146,8 +146,8 @@ const About = () => {
                         className="flex items-start space-x-4 p-6 rounded-lg backdrop-blur-md bg-white/10 border border-white/10"
                         variants={itemVariants}
                     >
-                        <div className="bg-gray-400 rounded-2xl p-1 text-2xl">
-                            <FaLightbulb className=' text-black/75 ' />
+                        <div className="bg-gray-200 rounded-2xl p-1 text-2xl">
+                            <FaLightbulb className=' text-primary-500 ' />
                         </div>
                         <div>
                             <h3 className="text-xl font-semibold">Career Roadmaps & Mock Assessments</h3>
@@ -160,8 +160,8 @@ const About = () => {
                         className="flex items-start space-x-4 p-6 rounded-lg backdrop-blur-md bg-white/10 border border-white/10"
                         variants={itemVariants}
                     >
-                        <div className="bg-gray-400 rounded-2xl p-1 text-2xl">
-                            <FaHandsHelping className=' text-black/75 ' />
+                        <div className="bg-gray-200 rounded-2xl p-1 text-2xl">
+                            <FaHandsHelping className=' text-purple-500 ' />
                         </div>
                         <div>
                             <h3 className="text-xl font-semibold">Placement Preparation Resources</h3>

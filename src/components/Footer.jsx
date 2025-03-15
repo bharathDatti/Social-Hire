@@ -21,7 +21,7 @@ const Footer = () => {
       { label: 'Student Guide', href: '#' }
     ],
     social: [
-      { label: 'Instagram', href: 'https://www.instagram.com/socialprachar_institute/', icon: FiInstagram },
+      { label: 'Instagram', href: 'https://www.instagram.com/socialhire.in?igsh=MWxiNmJubDJoNmoxOA==', icon: FiInstagram },
       { label: 'Twitter', href: 'https://x.com/social_prachar', icon: FaXTwitter },
       { label: 'LinkedIn', href: 'https://www.linkedin.com/company/socialprachar-com/posts/?feedView=all', icon: FiLinkedin },
       { label: 'Email', href: 'mailto:connect@socialhire.in', icon: FiMail },
