@@ -3,6 +3,7 @@ import { useDispatch, useSelector } from 'react-redux';
 import { motion } from 'framer-motion';
 import { subscribeToWebinarsAndSessions, clearWebinars } from '../redux/slices/webinarsSlice';
 import { FiCalendar, FiClock, FiUser, FiVideo, FiExternalLink, FiBriefcase } from 'react-icons/fi';
+import bg3 from '/bg-3.png';
 
 const Webinars = () => {
   const dispatch = useDispatch();
@@ -265,7 +266,7 @@ const Webinars = () => {
   );
 
   return (
-    <div className="min-h-screen bg-black bg-[url('./bg-3.png')] bg-no-repeat bg-cover bg-center py-12">
+    <div className="min-h-screen bg-black  bg-no-repeat bg-cover bg-center py-12" style={{ backgroundImage: `url(${bg3})` }}>
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <motion.div
           initial={{ opacity: 0, y: -20 }}

@@ -3,6 +3,7 @@ import { useDispatch, useSelector } from 'react-redux';
 import { motion } from 'framer-motion';
 import { FiBook, FiCheckCircle, FiFileText, FiVideo, FiDownload, FiChevronDown, FiChevronUp } from 'react-icons/fi';
 import { fetchResources, fetchTips, fetchFaqs } from '../redux/slices/placementSlice';
+import bg3 from '/bg-3.png';
 
 const PlacementPage = () => {
   const [activeTab, setActiveTab] = useState('resources');
@@ -106,7 +107,7 @@ const PlacementPage = () => {
     );
 
   return (
-    <div className="min-h-screen bg-black bg-[url('./bg-3.png')] bg-no-repeat bg-cover bg-center py-12">
+    <div className="min-h-screen bg-black  bg-no-repeat bg-cover bg-center py-12" style={{ backgroundImage: `url(${bg3})` }}>
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <motion.div
           initial={{ opacity: 0, y: -20 }}

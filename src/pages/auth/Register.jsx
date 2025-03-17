@@ -6,6 +6,7 @@ import { motion } from 'framer-motion';
 import { registerUser, googleLogin, clearError } from '../../redux/slices/authSlice';
 import { FiUser, FiMail, FiLock, FiAlertCircle } from 'react-icons/fi';
 import { FcGoogle } from 'react-icons/fc';
+import bg3 from '/bg-3.png';
 
 
 const Register = () => {
@@ -36,7 +37,7 @@ const Register = () => {
   };
 
   return (
-    <div className="min-h-screen  bg-black  bg-[url('./bg-3.png')] bg-no-repeat bg-cover bg-center  flex items-center justify-center px-4 sm:px-6 lg:px-8" >
+    <div className="min-h-screen  bg-black   bg-no-repeat bg-cover bg-center  flex items-center justify-center px-4 sm:px-6 lg:px-8" style={{ backgroundImage: `url(${bg3})` }}>
       <motion.div 
         className="max-w-md w-full bg-white rounded-lg shadow-xl overflow-hidden"
         initial={{ opacity: 0, y: 20 }}

@@ -4,6 +4,7 @@ import { motion } from 'framer-motion';
 import { fetchMentors } from '../redux/slices/mentorsSlice';
 import { FiUser, FiSearch, FiFilter, FiStar } from 'react-icons/fi';
 import { toast } from 'react-toastify';
+import bg3 from '/bg-3.png';
 
 const Mentors = () => {
   const dispatch = useDispatch();
@@ -91,7 +92,7 @@ const Mentors = () => {
   };
 
   return (
-    <div className="min-h-screen bg-black bg-[url('./bg-3.png')] bg-no-repeat bg-cover bg-center py-12">
+    <div className="min-h-screen bg-black bg-no-repeat bg-cover bg-center py-12" style={{ backgroundImage: `url(${bg3})` }}>
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <motion.div
           initial={{ opacity: 0, y: -20 }}
