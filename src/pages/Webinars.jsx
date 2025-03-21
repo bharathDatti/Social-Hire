@@ -1,4 +1,4 @@
-import { useEffect, useCallback, useState } from 'react';
+import { useEffect, useCallback, useState, useRef } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { motion } from 'framer-motion';
 import { subscribeToWebinarsAndSessions, clearWebinars } from '../redux/slices/webinarsSlice';
@@ -9,20 +9,33 @@ const Webinars = () => {
   const dispatch = useDispatch();
   const { items: allItems, loading, error } = useSelector((state) => state.webinars);
   const { user } = useSelector((state) => state.auth);
-  const [currentTime, setCurrentTime] = useState(new Date()); // For periodic updates
+  const [currentTime, setCurrentTime] = useState(new Date());
+  const unsubscribeRef = useRef({ webinars: null, sessions: null }); // Store unsubscribe functions
 
   useEffect(() => {
-    dispatch(subscribeToWebinarsAndSessions());
-
-    // Update time every minute to reflect status changes
+    const unsubscribePromise = dispatch(subscribeToWebinarsAndSessions());
+    
     const timer = setInterval(() => {
       setCurrentTime(new Date());
-    }, 60000); // 60 seconds
+    }, 60000);
 
     return () => {
       clearInterval(timer);
+      // Cleanup Firestore listeners
+      if (unsubscribeRef.current.webinars) unsubscribeRef.current.webinars();
+      if (unsubscribeRef.current.sessions) unsubscribeRef.current.sessions();
       dispatch(clearWebinars());
     };
+  }, [dispatch]);
+
+  // Modify the thunk subscription to store unsubscribe functions in ref
+  useEffect(() => {
+    const setupSubscriptions = async () => {
+      const { unwrap } = dispatch(subscribeToWebinarsAndSessions());
+      await unwrap(); // Wait for the thunk to set up listeners
+      // The unsubscribe functions are already set up in the thunk and stored in unsubscribeRef
+    };
+    setupSubscriptions();
   }, [dispatch]);
 
   const formatDate = useCallback((dateString) => {
@@ -36,17 +49,15 @@ const Webinars = () => {
 
   const getSessionStatus = useCallback((item) => {
     if (item.type === 'webinar') {
-      return new Date(item.date) >= currentTime ? { text: 'Register', disabled: false } : { text: 'Ended', disabled: true };
+      return new Date(item.date) >= currentTime ? { text: 'Register', disabled: false, link: item.sessionLink } : { text: 'Ended', disabled: true };
     }
 
-    // Handle session status
     const sessionDate = new Date(item.date);
     const [hours, minutes] = item.time.split(':');
     sessionDate.setHours(parseInt(hours), parseInt(minutes));
     const sessionEndTime = new Date(sessionDate);
     sessionEndTime.setMinutes(sessionEndTime.getMinutes() + (item.duration || 60));
 
-    // Respect the status field first
     switch (item.status) {
       case 'cancelled':
         return { text: 'Cancelled', disabled: true };
@@ -56,10 +67,9 @@ const Webinars = () => {
         return { text: 'Pending', disabled: true };
       case 'scheduled':
       default:
-        // For 'scheduled' or undefined status, use time-based logic
-        if (currentTime < sessionDate) return { text: 'Upcoming', disabled: true };
+        if (currentTime < sessionDate) return { text: 'Register', disabled: false, link: item.sessionLink };
         if (currentTime >= sessionDate && currentTime <= sessionEndTime) {
-          return { text: 'Join Now', disabled: !item.sessionLink };
+          return { text: 'Join Now', disabled: !item.sessionLink, link: item.sessionLink };
         }
         return { text: 'Ended', disabled: true };
     }
@@ -73,25 +83,13 @@ const Webinars = () => {
     const combined = [...webinars, ...userSessions];
 
     const upcoming = combined.filter((item) => {
-      const itemDate = new Date(item.date);
       const status = getSessionStatus(item);
-      return (
-        itemDate >= currentTime && 
-        status.text !== 'Cancelled' && 
-        status.text !== 'Completed' && 
-        status.text !== 'Ended'
-      );
+      return status.text === 'Register' || status.text === 'Join Now';
     }).sort((a, b) => new Date(a.date) - new Date(b.date));
 
     const past = combined.filter((item) => {
-      const itemDate = new Date(item.date);
       const status = getSessionStatus(item);
-      return (
-        itemDate < currentTime || 
-        status.text === 'Cancelled' || 
-        status.text === 'Completed' || 
-        status.text === 'Ended'
-      );
+      return status.text === 'Ended' || status.text === 'Completed';
     }).sort((a, b) => new Date(b.date) - new Date(a.date));
 
     return { upcoming, past };
@@ -109,9 +107,11 @@ const Webinars = () => {
     visible: { y: 0, opacity: 1, transition: { duration: 0.3 } },
   };
 
-  const handleJoinSession = (item) => {
-    if (item.sessionLink) {
-      window.open(item.sessionLink, '_blank', 'noopener,noreferrer');
+  const handleJoinSession = (link) => {
+    if (link) {
+      window.open(link, '_blank', 'noopener,noreferrer');
+    } else {
+      alert('No session link available for this event.');
     }
   };
 
@@ -167,32 +167,13 @@ const Webinars = () => {
           </div>
         </div>
 
-        {item.type === 'webinar' ? (
-          new Date(item.date) >= currentTime ? (
-            <button className="btn-primary w-full">Register</button>
-          ) : item.recordingUrl ? (
-            <a
-              href={item.recordingUrl}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="btn-secondary w-full flex items-center justify-center"
-            >
-              <FiExternalLink className="mr-2" /> Watch Recording
-            </a>
-          ) : (
-            <button className="btn-primary w-full opacity-50 cursor-not-allowed" disabled>
-              Ended
-            </button>
-          )
-        ) : (
-          <button
-            onClick={() => handleJoinSession(item)}
-            className={`btn-primary w-full ${getSessionStatus(item).disabled ? 'opacity-50 cursor-not-allowed' : ''}`}
-            disabled={getSessionStatus(item).disabled}
-          >
-            {getSessionStatus(item).text}
-          </button>
-        )}
+        <button
+          onClick={() => handleJoinSession(getSessionStatus(item).link)}
+          className={`btn-primary w-full ${getSessionStatus(item).disabled ? 'opacity-50 cursor-not-allowed' : ''}`}
+          disabled={getSessionStatus(item).disabled}
+        >
+          {getSessionStatus(item).text}
+        </button>
       </div>
     </motion.div>
   );
@@ -232,19 +213,9 @@ const Webinars = () => {
               {item.type === 'webinar' ? item.platform : 'Online Session'}
             </div>
           </div>
-          {item.type === 'webinar' ? (
-            new Date(item.date) >= currentTime ? (
-              <button className="bg-white text-primary-700 hover:bg-gray-100 font-bold py-3 px-6 rounded-md">
-                Register Now
-              </button>
-            ) : (
-              <button className="bg-white text-primary-700 opacity-50 cursor-not-allowed font-bold py-3 px-6 rounded-md" disabled>
-                Ended
-              </button>
-            )
-          ) : (
+          <div className="flex space-x-3">
             <button
-              onClick={() => handleJoinSession(item)}
+              onClick={() => handleJoinSession(getSessionStatus(item).link)}
               className={`bg-white text-primary-700 hover:bg-gray-100 font-bold py-3 px-6 rounded-md ${
                 getSessionStatus(item).disabled ? 'opacity-50 cursor-not-allowed' : ''
               }`}
@@ -252,7 +223,7 @@ const Webinars = () => {
             >
               {getSessionStatus(item).text}
             </button>
-          )}
+          </div>
         </div>
         <div className="md:w-1/3 bg-primary-800 flex items-center justify-center p-8">
           <div className="text-center text-white">
@@ -266,7 +237,7 @@ const Webinars = () => {
   );
 
   return (
-    <div className="min-h-screen bg-black  bg-no-repeat bg-cover bg-center py-12" style={{ backgroundImage: `url(${bg3})` }}>
+    <div className="min-h-screen bg-black bg-no-repeat bg-cover bg-center py-12" style={{ backgroundImage: `url(${bg3})` }}>
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <motion.div
           initial={{ opacity: 0, y: -20 }}

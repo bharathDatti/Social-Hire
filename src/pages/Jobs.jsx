@@ -45,7 +45,7 @@ const Jobs = () => {
     const now = new Date().getTime();
     const expiry = new Date(expiryDate).getTime();
     const timeLeft = expiry - now;
-    return timeLeft > 0 && timeLeft <= 24 * 60 * 60 * 1000;
+    return timeLeft > 0 && timeLeft <= 24 * 60 * 60 * 1000; // Less than or equal to 24 hours
   };
 
   useEffect(() => {
@@ -79,7 +79,7 @@ const Jobs = () => {
   }, [location, isAuthenticated, navigate, jobs]);
 
   const parseSalary = (salaryString) => {
-    if (!salaryString) return { min: 0, max: Infinity }; // Handle undefined salary
+    if (!salaryString) return { min: 0, max: Infinity };
     const range = salaryString.split('-');
     const min = parseFloat(range[0]);
     const max = parseFloat(range[1]);
@@ -87,7 +87,7 @@ const Jobs = () => {
   };
 
   const parseExperience = (experienceString) => {
-    if (!experienceString) return { type: 'Unknown', min: 0, max: Infinity }; // Handle undefined experience
+    if (!experienceString) return { type: 'Unknown', min: 0, max: Infinity };
     if (experienceString === 'Internship') return { type: 'Internship', min: 0, max: 0 };
     if (experienceString === '0 years') return { type: 'Entry-Level', min: 0, max: 0 };
     if (experienceString.includes('-')) {
@@ -135,15 +135,24 @@ const Jobs = () => {
         'More than 14 LPA': { min: 14, max: Infinity }
       }[filters.salaryRange];
 
-      if (!filterRange) return true; // If no filter range is selected, include all jobs
+      if (!filterRange) return true;
 
-      // Check for overlap between job's salary range and filter range
       return (
         jobMin <= filterRange.max && jobMax >= filterRange.min
       );
     })();
 
     return matchesSearch && matchesType && matchesLocation && matchesExperienceLevel && matchesDatePosted && matchesSalaryRange;
+  }).sort((a, b) => {
+    // Prioritize jobs expiring within 24 hours
+    const aExpiringSoon = isAboutToExpire(a.expiryDate);
+    const bExpiringSoon = isAboutToExpire(b.expiryDate);
+
+    if (aExpiringSoon && !bExpiringSoon) return -1; // a goes first
+    if (!aExpiringSoon && bExpiringSoon) return 1;  // b goes first
+
+    // If both are expiring soon or neither are, sort by creation date (newest first)
+    return new Date(b.createdAt) - new Date(a.createdAt);
   });
 
   const totalPages = Math.ceil(filteredJobs.length / JOBS_PER_PAGE);
@@ -392,14 +401,13 @@ const Jobs = () => {
                   {/* Render Page Numbers */}
                   {(() => {
                     const pages = [];
-                    let startPage = Math.max(1, currentPage - 1); // Start from currentPage - 1
-                    let endPage = Math.min(totalPages, currentPage + 1); // End at currentPage + 1
+                    let startPage = Math.max(1, currentPage - 1);
+                    let endPage = Math.min(totalPages, currentPage + 1);
 
-                    // Always show at least 3 pages
                     if (currentPage === 1) {
-                      endPage = Math.min(totalPages, 3); // Show first 3 pages initially
+                      endPage = Math.min(totalPages, 3);
                     } else if (currentPage === totalPages) {
-                      startPage = Math.max(1, totalPages - 2); // Show last 3 pages
+                      startPage = Math.max(1, totalPages - 2);
                     }
 
                     for (let i = startPage; i <= endPage; i++) {

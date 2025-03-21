@@ -53,7 +53,7 @@ const Navbar = () => {
                 background: 'linear-gradient(to right, #0284c7 44%, #CFA575 66%)',
                 WebkitBackgroundClip: 'text',
                 WebkitTextFillColor: 'transparent',
-              }}>Social Hire</span>
+              }}>SocialHire</span>
             </Link>
           </div>
 

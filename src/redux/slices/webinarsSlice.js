@@ -43,16 +43,15 @@ export const subscribeToWebinarsAndSessions = createAsyncThunk(
         }
       );
 
-      return () => {
-        if (unsubscribeFunctions.webinars) unsubscribeFunctions.webinars();
-        if (unsubscribeFunctions.sessions) unsubscribeFunctions.sessions();
-      };
+      // Return nothing (undefined) instead of the unsubscribe function
+      return undefined;
     } catch (error) {
       return rejectWithValue(error.message || 'Failed to subscribe to data');
     }
   }
 );
 
+// Rest of the thunks (addWebinar, updateWebinar, deleteWebinar) remain unchanged
 export const addWebinar = createAsyncThunk(
   'webinars/addWebinar',
   async (webinarData, { rejectWithValue }) => {
@@ -102,7 +101,7 @@ const initialState = {
   items: [],
   loading: false,
   error: null,
-  unsubscribe: null,
+  // Remove unsubscribe from state since we won't store it here
 };
 
 const webinarsSlice = createSlice({
@@ -124,10 +123,7 @@ const webinarsSlice = createSlice({
       state.items = [];
       state.loading = false;
       state.error = null;
-      if (state.unsubscribe) {
-        state.unsubscribe();
-        state.unsubscribe = null;
-      }
+      // Remove unsubscribe cleanup from here
     },
   },
   extraReducers: (builder) => {
@@ -136,9 +132,9 @@ const webinarsSlice = createSlice({
         state.loading = true;
         state.error = null;
       })
-      .addCase(subscribeToWebinarsAndSessions.fulfilled, (state, action) => {
+      .addCase(subscribeToWebinarsAndSessions.fulfilled, (state) => {
         state.loading = false;
-        state.unsubscribe = action.payload;
+        // No need to store unsubscribe in state
       })
       .addCase(subscribeToWebinarsAndSessions.rejected, (state, action) => {
         state.loading = false;
