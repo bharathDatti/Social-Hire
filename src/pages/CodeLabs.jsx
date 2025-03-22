@@ -34,14 +34,21 @@ import {
 } from 'react-icons/ri';
 import bg3 from '/bg-3.png';
 
-const TechnologyCard = ({ tech }) => {
+const TechnologyCard = ({ tech, activeCardId, setActiveCardId }) => {
   const [isHovered, setIsHovered] = useState(false);
+  const isActive = activeCardId === tech.id; // Check if this card is the active one
+
+  // Handle tap/click to set this card as active
+  const handleTap = () => {
+    setActiveCardId(isActive ? null : tech.id); // Toggle off if already active, otherwise set as active
+  };
 
   return (
     <motion.div
       className="relative bg-white bg-opacity-10 backdrop-blur-lg rounded-lg p-6 flex flex-col items-center transition-all duration-300 group min-h-[250px]"
-      onHoverStart={() => setIsHovered(true)}
-      onHoverEnd={() => setIsHovered(false)}
+      onHoverStart={() => setIsHovered(true)} // For desktop hover
+      onHoverEnd={() => setIsHovered(false)}  // For desktop hover
+      onClick={handleTap}                     // For mobile tap
       variants={{
         hidden: { y: 20, opacity: 0 },
         visible: {
@@ -51,14 +58,18 @@ const TechnologyCard = ({ tech }) => {
         }
       }}
     >
-      <div className={`flex flex-col items-center transition-opacity duration-300 ${isHovered ? 'opacity-60' : 'opacity-100'}`}>
+      <div
+        className={`flex flex-col items-center transition-opacity duration-300 ${
+          isHovered || isActive ? 'opacity-60' : 'opacity-100'
+        }`}
+      >
         <tech.icon className={`h-12 w-12 ${tech.color} mb-4`} />
         <h3 className="text-lg font-semibold text-white mb-2">{tech.name}</h3>
         <p className="text-sm text-gray-300 text-center">{tech.description}</p>
       </div>
       
       <AnimatePresence>
-        {isHovered && (
+        {(isHovered || isActive) && (
           <motion.div
             className="absolute bottom-6 left-0 right-0 flex justify-center"
             initial={{ opacity: 0, y: 10 }}
@@ -71,6 +82,7 @@ const TechnologyCard = ({ tech }) => {
               target="_blank"
               rel="noopener noreferrer"
               className="bg-primary-600 text-white px-6 py-2 rounded-full font-medium hover:bg-primary-700 transition-colors duration-200"
+              onClick={(e) => e.stopPropagation()} // Prevent tap on button from toggling card
             >
               Explore Now
             </a>
@@ -83,6 +95,7 @@ const TechnologyCard = ({ tech }) => {
 
 const CodeLabs = () => {
   const [selectedCategory, setSelectedCategory] = useState('all');
+  const [activeCardId, setActiveCardId] = useState(null); // Track the active card
 
   const categories = [
     { id: 'all', name: 'All Technologies', icon: RiCodeSLine },
@@ -417,7 +430,7 @@ const CodeLabs = () => {
     : technologies.filter(tech => tech.category === selectedCategory);
 
   return (
-    <div className="min-h-screen bg-black  bg-no-repeat bg-cover bg-center py-12" style={{ backgroundImage: `url(${bg3})` }}>
+    <div className="min-h-screen bg-black bg-no-repeat bg-cover bg-center py-12" style={{ backgroundImage: `url(${bg3})` }}>
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <motion.div
           initial={{ opacity: 0, y: -20 }}
@@ -463,7 +476,12 @@ const CodeLabs = () => {
           }}
         >
           {filteredTechnologies.map((tech) => (
-            <TechnologyCard key={tech.id} tech={tech} />
+            <TechnologyCard 
+              key={tech.id} 
+              tech={tech} 
+              activeCardId={activeCardId} 
+              setActiveCardId={setActiveCardId} 
+            />
           ))}
         </motion.div>
 
