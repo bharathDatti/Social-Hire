@@ -28,6 +28,7 @@ const Jobs = () => {
   const [sharedJobId, setSharedJobId] = useState(null);
   const [selectedJob, setSelectedJob] = useState(null);
   const [currentPage, setCurrentPage] = useState(1);
+  const [showExpiringSoon, setShowExpiringSoon] = useState(false); // State for "Expiring Soon" filter
 
   const calculateTimeRemaining = (expiryDate) => {
     if (!expiryDate) return null;
@@ -100,60 +101,64 @@ const Jobs = () => {
     return { type: 'Experienced', min: years, max: years };
   };
 
-  const filteredJobs = jobs.filter(job => {
-    const matchesSearch = job.title.toLowerCase().includes(searchTerm.toLowerCase()) || 
-                         job.company.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         job.description.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesType = filters.type === '' || job.type === filters.type;
-    const matchesLocation = filters.location === '' || job.location.includes(filters.location);
-    const matchesExperienceLevel = filters.experienceLevel === '' || (() => {
-      const { type, min, max } = parseExperience(job.experienceLevel);
-      switch (filters.experienceLevel) {
-        case 'Internship':
-          return type === 'Internship';
-        case 'Entry-Level':
-          return type === 'Entry-Level' || (min >= 0 && max <= 1);
-        case 'Experienced':
-          return type === 'Experienced' && min > 1;
-        default:
-          return true;
+  const filteredJobs = jobs
+    .filter(job => {
+      const matchesSearch = job.title.toLowerCase().includes(searchTerm.toLowerCase()) || 
+                           job.company.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                           job.description.toLowerCase().includes(searchTerm.toLowerCase());
+      const matchesType = filters.type === '' || job.type === filters.type;
+      const matchesLocation = filters.location === '' || job.location.includes(filters.location);
+      const matchesExperienceLevel = filters.experienceLevel === '' || (() => {
+        const { type, min, max } = parseExperience(job.experienceLevel);
+        switch (filters.experienceLevel) {
+          case 'Internship':
+            return type === 'Internship';
+          case 'Entry-Level':
+            return type === 'Entry-Level' || (min >= 0 && max <= 1);
+          case 'Experienced':
+            return type === 'Experienced' && min > 1;
+          default:
+            return true;
+        }
+      })();
+      const matchesDatePosted = filters.datePosted === '' || {
+        'Past 24 hours': new Date(job.createdAt) > new Date(new Date().setDate(new Date().getDate() - 1)),
+        'Past Week': new Date(job.createdAt) > new Date(new Date().setDate(new Date().getDate() - 7)),
+        'Past Month': new Date(job.createdAt) > new Date(new Date().setMonth(new Date().getMonth() - 1))
+      }[filters.datePosted];
+      const matchesSalaryRange = filters.salaryRange === '' || (() => {
+        const { min: jobMin, max: jobMax } = parseSalary(job.salary);
+        const filterRange = {
+          '0-2 LPA': { min: 0, max: 2 },
+          '3-5 LPA': { min: 3, max: 5 },
+          '6-8 LPA': { min: 6, max: 8 },
+          '9-11 LPA': { min: 9, max: 11 },
+          '12-14 LPA': { min: 12, max: 14 },
+          'More than 14 LPA': { min: 14, max: Infinity }
+        }[filters.salaryRange];
+
+        if (!filterRange) return true;
+
+        return (
+          jobMin <= filterRange.max && jobMax >= filterRange.min
+        );
+      })();
+
+      // Apply "Expiring Soon" filter only when toggled
+      const matchesExpiringSoon = !showExpiringSoon || isAboutToExpire(job.expiryDate);
+
+      return matchesSearch && matchesType && matchesLocation && matchesExperienceLevel && matchesDatePosted && matchesSalaryRange && matchesExpiringSoon;
+    })
+    .sort((a, b) => {
+      if (showExpiringSoon) {
+        // When "Expiring Soon" is active, sort by expiry date (soonest first)
+        const aExpiry = a.expiryDate ? new Date(a.expiryDate).getTime() : Infinity;
+        const bExpiry = b.expiryDate ? new Date(b.expiryDate).getTime() : Infinity;
+        return aExpiry - bExpiry;
       }
-    })();
-    const matchesDatePosted = filters.datePosted === '' || {
-      'Past 24 hours': new Date(job.createdAt) > new Date(new Date().setDate(new Date().getDate() - 1)),
-      'Past Week': new Date(job.createdAt) > new Date(new Date().setDate(new Date().getDate() - 7)),
-      'Past Month': new Date(job.createdAt) > new Date(new Date().setMonth(new Date().getMonth() - 1))
-    }[filters.datePosted];
-    const matchesSalaryRange = filters.salaryRange === '' || (() => {
-      const { min: jobMin, max: jobMax } = parseSalary(job.salary);
-      const filterRange = {
-        '0-2 LPA': { min: 0, max: 2 },
-        '3-5 LPA': { min: 3, max: 5 },
-        '6-8 LPA': { min: 6, max: 8 },
-        '9-11 LPA': { min: 9, max: 11 },
-        '12-14 LPA': { min: 12, max: 14 },
-        'More than 14 LPA': { min: 14, max: Infinity }
-      }[filters.salaryRange];
-
-      if (!filterRange) return true;
-
-      return (
-        jobMin <= filterRange.max && jobMax >= filterRange.min
-      );
-    })();
-
-    return matchesSearch && matchesType && matchesLocation && matchesExperienceLevel && matchesDatePosted && matchesSalaryRange;
-  }).sort((a, b) => {
-    // Prioritize jobs expiring within 24 hours
-    const aExpiringSoon = isAboutToExpire(a.expiryDate);
-    const bExpiringSoon = isAboutToExpire(b.expiryDate);
-
-    if (aExpiringSoon && !bExpiringSoon) return -1; // a goes first
-    if (!aExpiringSoon && bExpiringSoon) return 1;  // b goes first
-
-    // If both are expiring soon or neither are, sort by creation date (newest first)
-    return new Date(b.createdAt) - new Date(a.createdAt);
-  });
+      // Default sorting by createdAt date (newest first)
+      return new Date(b.createdAt) - new Date(a.createdAt);
+    });
 
   const totalPages = Math.ceil(filteredJobs.length / JOBS_PER_PAGE);
   const startIndex = (currentPage - 1) * JOBS_PER_PAGE;
@@ -173,6 +178,7 @@ const Jobs = () => {
   const resetFilters = () => {
     setFilters({ type: '', location: '', experienceLevel: '', datePosted: '', salaryRange: '' });
     setSearchTerm('');
+    setShowExpiringSoon(false); // Reset expiring soon filter
     setCurrentPage(1);
   };
 
@@ -198,6 +204,11 @@ const Jobs = () => {
         toast.error('Failed to share job link');
       }
     }
+  };
+
+  const handleExpiringSoonClick = () => {
+    setShowExpiringSoon(prev => !prev); // Toggle expiring soon filter
+    setCurrentPage(1); // Reset to first page
   };
 
   const locations = [...new Set(jobs.map(job => job.location))];
@@ -244,6 +255,14 @@ const Jobs = () => {
               className="flex items-center justify-center px-4 py-3 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 w-full md:w-auto"
             >
               <FiFilter className="mr-2" /> {showFilters ? 'Hide Filters' : 'Show Filters'}
+            </button>
+            <button 
+              onClick={handleExpiringSoonClick}
+              className={`flex items-center justify-center px-4 py-3 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 w-full md:w-auto ${
+                showExpiringSoon ? 'bg-red-100 text-red-700' : ''
+              } ${filteredJobs.some(job => isAboutToExpire(job.expiryDate)) && !showExpiringSoon ? 'animate-pulse' : ''}`}
+            >
+              <FiClock className="mr-2" /> Expiring Soon
             </button>
           </div>
 
@@ -387,18 +406,13 @@ const Jobs = () => {
               {/* Pagination */}
               {totalPages > 1 && (
                 <div className="flex justify-center gap-2 mt-6">
-                  {/* Previous Button */}
                   <button
-                    onClick={() => {
-                      setCurrentPage(prev => Math.max(prev - 1, 1));
-                    }}
+                    onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
                     disabled={currentPage === 1}
                     className="px-4 py-2 bg-white rounded-md shadow hover:bg-gray-50 disabled:opacity-50"
                   >
                     Previous
                   </button>
-
-                  {/* Render Page Numbers */}
                   {(() => {
                     const pages = [];
                     let startPage = Math.max(1, currentPage - 1);
@@ -425,15 +439,10 @@ const Jobs = () => {
                         </button>
                       );
                     }
-
                     return pages;
                   })()}
-
-                  {/* Next Button */}
                   <button
-                    onClick={() => {
-                      setCurrentPage(prev => Math.min(prev + 1, totalPages));
-                    }}
+                    onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
                     disabled={currentPage === totalPages}
                     className="px-4 py-2 bg-white rounded-md shadow hover:bg-gray-50 disabled:opacity-50"
                   >
