@@ -11,52 +11,6 @@ const PlacementPage = () => {
   const dispatch = useDispatch();
   const { resources, tips, faqs, status } = useSelector((state) => state.placement);
 
-  // Static resources data (from your first placement.jsx)
-  const staticResources = [
-    {
-      title: 'Resume Building Guide',
-      description: 'Learn how to create an impressive resume that stands out to recruiters.',
-      icon: <FiFileText className="h-6 w-6" />,
-      type: 'PDF',
-      link: '/Resume_builder.pdf', // Path to PDF in the public folder
-    },
-    {
-      title: 'Technical Interview Preparation',
-      description: 'Comprehensive guide to ace technical interviews with practice problems.',
-      icon: <FiBook className="h-6 w-6" />,
-      type: 'Course',
-      link: '/Frequently_Interviews_Answers.pdf',
-    },
-    {
-      title: 'Mock Interview Videos',
-      description: 'Watch mock interviews with feedback from industry professionals.',
-      icon: <FiVideo className="h-6 w-6" />,
-      type: 'Video',
-      link: '#',
-    },
-    {
-      title: 'Behavioral Interview Questions',
-      description: 'Common behavioral questions with example answers and tips.',
-      icon: <FiFileText className="h-6 w-6" />,
-      type: 'PDF',
-      link: '/Frequently_Interviews_Answers.pdf', // Path to PDF in the public folder
-    },
-    {
-      title: 'Coding Challenge Practice',
-      description: 'Practice coding challenges similar to those used in technical interviews.',
-      icon: <FiBook className="h-6 w-6" />,
-      type: 'Interactive',
-      link: '/Tips_for_Success_in_Coding_Tests_Conducted_by_Companies.pdf',
-    },
-    {
-      title: 'Salary Negotiation Guide',
-      description: 'Learn effective strategies for negotiating your salary and benefits.',
-      icon: <FiFileText className="h-6 w-6" />,
-      type: 'PDF',
-      link: '/Salary_Negotiation_Tips.pdf', // Path to PDF in the public folder
-    },
-  ];
-
   useEffect(() => {
     dispatch(fetchResources());
     dispatch(fetchTips());
@@ -72,10 +26,25 @@ const PlacementPage = () => {
   const handleDownload = (link, title) => {
     const a = document.createElement('a');
     a.href = link;
-    a.download = `${title}.pdf`;
+    a.download = title.includes('.') ? title : `${title}.pdf`; // Use title as filename, append .pdf if needed
     document.body.appendChild(a);
     a.click();
     document.body.removeChild(a);
+  };
+
+  // Map resource types to icons
+  const getResourceIcon = (type) => {
+    switch (type) {
+      case 'PDF':
+        return <FiFileText className="h-6 w-6" />;
+      case 'Course':
+      case 'Interactive':
+        return <FiBook className="h-6 w-6" />;
+      case 'Video':
+        return <FiVideo className="h-6 w-6" />;
+      default:
+        return <FiFileText className="h-6 w-6" />;
+    }
   };
 
   const containerVariants = {
@@ -87,7 +56,7 @@ const PlacementPage = () => {
     visible: { y: 0, opacity: 1, transition: { duration: 0.3 } },
   };
 
-  if (status === 'loading')
+  if (status === 'loading') {
     return (
       <div className="flex justify-center items-center py-12">
         <svg
@@ -105,9 +74,10 @@ const PlacementPage = () => {
         </svg>
       </div>
     );
+  }
 
   return (
-    <div className="min-h-screen bg-black  bg-no-repeat bg-cover bg-center py-12" style={{ backgroundImage: `url(${bg3})` }}>
+    <div className="min-h-screen bg-black bg-no-repeat bg-cover bg-center py-12" style={{ backgroundImage: `url(${bg3})` }}>
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <motion.div
           initial={{ opacity: 0, y: -20 }}
@@ -144,45 +114,44 @@ const PlacementPage = () => {
             animate="visible"
             className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6"
           >
-            {staticResources.map((resource, index) => (
-              <motion.div
-                key={index}
-                variants={itemVariants}
-                className="bg-white rounded-lg shadow-md hover:shadow-lg transition-shadow duration-300 overflow-hidden"
-              >
-                <div className="p-6">
-                  <div className="flex items-center justify-between mb-4">
-                    <div className="h-12 w-12 rounded-full bg-primary-100 text-primary-600 flex items-center justify-center">
-                      {resource.icon}
+            {resources.length > 0 ? (
+              resources.map((resource, index) => (
+                <motion.div
+                  key={index}
+                  variants={itemVariants}
+                  className="bg-white rounded-lg shadow-md hover:shadow-lg transition-shadow duration-300 overflow-hidden"
+                >
+                  <div className="p-6">
+                    <div className="flex items-center justify-between mb-4">
+                      <div className="h-12 w-12 rounded-full bg-primary-100 text-primary-600 flex items-center justify-center">
+                        {getResourceIcon(resource.type)}
+                      </div>
+                      <span className="bg-gray-100 text-gray-800 text-xs font-semibold px-2.5 py-0.5 rounded">
+                        {resource.type}
+                      </span>
                     </div>
-                    <span className="bg-gray-100 text-gray-800 text-xs font-semibold px-2.5 py-0.5 rounded">
-                      {resource.type}
-                    </span>
-                  </div>
-                  <h3 className="text-lg font-semibold text-gray-900 mb-2">{resource.title}</h3>
-                  <p className="text-sm text-gray-600 mb-4">{resource.description}</p>
-                  {resource.type === 'PDF' ? (
-                    <button
-                      onClick={() => handleDownload(resource.link, resource.title)}
+                    <h3 className="text-lg font-semibold text-gray-900 mb-2">{resource.title}</h3>
+                    <p className="text-sm text-gray-600 mb-4">{resource.description}</p>
+                    <a
+                      href={resource.link}
+                      download={resource.title + (resource.type === 'PDF' ? '.pdf' : '')}
+                      onClick={(e) => {
+                        e.preventDefault();
+                        handleDownload(resource.link, resource.title);
+                      }}
                       className="flex items-center text-primary-600 hover:text-primary-800 font-medium"
                     >
                       <FiDownload className="mr-2" /> Download Resource
-                    </button>
-                  ) : (
-                    <a
-                      href={resource.link}
-                      className="flex items-center text-primary-600 hover:text-primary-800 font-medium"
-                    >
-                      <FiDownload className="mr-2" /> Access Resource
                     </a>
-                  )}
-                </div>
-              </motion.div>
-            ))}
+                  </div>
+                </motion.div>
+              ))
+            ) : (
+              <p className="text-gray-500 col-span-full text-center">No resources available yet.</p>
+            )}
           </motion.div>
         )}
 
-        {/* Tips and FAQs tabs remain unchanged */}
         {activeTab === 'tips' && (
           <motion.div
             variants={containerVariants}
